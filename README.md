@@ -284,7 +284,7 @@ You must be able to explain every significant part of your submitted code.
 
 ## Use of AI Tools
 
-You may use AI tools such as GPT, Gemini, DeepSeek, Claude, and similar systems for explanation, debugging, and generating study examples.
+You may use AI tools such as Qwen, GPT, Gemini, DeepSeek, Claude, and similar systems for explanation, debugging, and generating study examples.
 
 However, over-reliance may prevent you from developing real problem-solving skills.
 
