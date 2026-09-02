@@ -1,5 +1,5 @@
 # BIL 322 System Programming  
-**Spring 2026, Department of Computer Engineering, Istanbul Medeniyet University**
+**Fall 2026, Department of Computer Engineering, Istanbul Medeniyet University**
 
 - [2026 lecture notes](lectures/)  
 - [2025 BIL 222 notes](2025-bil222-lecture-notes/)  
