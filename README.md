@@ -1,207 +1,300 @@
-# BIL 322 System Programming (Spring 2026, Dept of Computer Engineering, Istanbul Medeniyet Unv.)
-------------------------------------------------------------------------------
-* [2026 lecture notes](lectures/)
-* [2025 BIL222 notes](2025-bil22-lecture-notes)
-* [2024 BIL222 notes](https://sites.google.com/view/adaskin/system-programming) 
+# BIL 322 System Programming  
+**Spring 2026, Department of Computer Engineering, Istanbul Medeniyet University**
+
+- [2026 lecture notes](lectures/)  
+- [2025 BIL 222 notes](2025-bil222-lecture-notes/)  
+- [2024 BIL 222 notes](https://sites.google.com/view/adaskin/system-programming)
 
 ---
 
-- [BIL 322 System Programming (Spring 2026, Dept of Computer Engineering, Istanbul Medeniyet Unv.)](#bil-322-system-programming-spring-2026-dept-of-computer-engineering-istanbul-medeniyet-unv)
-  - [Meeting Times](#meeting-times)
-  - [Prerequisites](#prerequisites)
-  - [Overview](#overview)
-  - [Learning Outcomes](#learning-outcomes)
-  - [Textbooks and Course Material](#textbooks-and-course-material)
-  - [Weekly Content](#weekly-content)
-  - [Quizzes and labs](#quizzes-and-labs)
-  - [Homework-coding assignments](#homework-coding-assignments)
-  - [Grading](#grading)
-  - [Course sites](#course-sites)
-  - [Environment Settings](#environment-settings)
-  - [Collaboration and Cheating Policy](#collaboration-and-cheating-policy)
-  - [Use of AI, GPT, Gemini, DeepSeek, etc.](#use-of-ai-gpt-gemini-deepseek-etc)
-    - [Example Uses and Prompts](#example-uses-and-prompts)
-
 ## Meeting Times
-- Labs on Thursday @BIL-Lab 11:30am,
-- Lectures on Monday @501 at 12:30pm
+
+- **Lectures:** Monday @ 501, 12:30  
+- **Labs:** Thursday @ BIL-Lab, 11:30  
+
+---
 
 ## Prerequisites
-You are expected to have prior C programming experience and a basic understanding of data structures and algorithms.  
-A passing grade in BIL 115 is required. **No prior Rust experience is assumed** – Rust will be taught alongside C during the semester.
 
-## Overview
-This course introduces the fundamentals of system programming in Unix-like environments, with a **dual emphasis on C and Rust**.  
-In the first part we cover low‑level execution mechanics, memory layout, and custom allocators – first in C, then re‑expressed through Rust’s ownership and smart pointers.  
-The second part focuses on concurrency, inter‑process communication, and asynchronous I/O, using both POSIX APIs (pthreads, `epoll`, shared memory) and Rust’s safe concurrency primitives (`std::thread`, `Arc<Mutex<T>>`, `tokio`).  
+Students are expected to have prior C programming experience and basic knowledge of data structures and algorithms.
 
-By working in two languages, students learn not only *how* the OS interface works, but also *why* modern systems languages like Rust can eliminate whole classes of bugs at compile time. The course acts as a bridge to advanced topics such as operating systems, high‑performance computing, and distributed systems.
+A passing grade in **BIL 115** is required.  
+The old equivalent C programming course, such as **BIL 121**, may be considered equivalent.
+
+**No prior Rust experience is required.**  
+Rust appears only through short conceptual examples comparing it with C.
+
+---
+
+## Course Overview
+
+> This course introduces Unix/Linux system programming using C as the primary language. Topics include the C toolchain, object files, pointers, memory layout, system calls, file I/O, processes, memory allocators, threads, synchronization, IPC, networking, signals, and filesystems. Selected Rust examples are used to compare modern approaches to memory safety, error handling, and concurrency. The course includes labs and a group project, which may involve sockets, IPC, threads, and optional GUI visualization.
+ 
+The course is primarily taught in **C**, because C gives direct access to system calls, memory layout, file descriptors, processes, threads, synchronization, IPC, signals, and sockets.
+
+The first part of the course covers advanced C topics and the C toolchain:
+
+- `gcc`, `make`, Git (version control), GDB, Valgrind,
+- macros, pointers, function pointers,
+- structs, alignment, padding,
+- object files and linking,
+- binary file I/O.
+
+The second part covers Unix system programming:
+
+- system calls and file I/O,
+- processes, `fork`, `exec`, `wait`,
+- simple shell implementation,
+- memory allocators,
+- threads and synchronization,
+- deadlocks, producer/consumer, reader/writer,
+- virtual memory and IPC,
+- pipes, shared memory, message queues,
+- networking and socket programming,
+- signals,
+- filesystems.
+
+Selected **Rust examples** are used briefly during the semester to compare modern safety mechanisms with C. These examples are conceptual and short. They are not intended to turn the course into a full Rust course.
+
+Some labs and the group project may include visualization or GUI components using libraries such as **GTK**, **Qt**, or **SDL**, but the core system-programming logic is expected to be implemented using C and POSIX APIs.
+
+---
+
+## Course Language Policy
+
+### Primary language: C
+
+Most lectures, labs, assignments, and projects are in C.
+
+### Rust: short conceptual comparisons only
+
+Rust is used only for small examples such as:
+
+- ownership versus manual `malloc`/`free`,
+- `Box`/`Vec` versus heap allocation,
+- `Result` versus `errno`,
+- `std::process::Command` versus `fork`/`exec`,
+- `Arc<Mutex<T>>` versus `pthread_mutex_t`.
+
+Students are expected to read and understand simple Rust snippets, but they are not expected to write large Rust programs.
+
+Advanced Rust topics such as `tokio`, async, custom Rust allocators, deep lifetimes, and extensive `unsafe` Rust are not required.
+
+### Other languages
+
+Socket programming may briefly be compared with Python or Java examples, but C remains the main implementation language.
+
+---
 
 ## Learning Outcomes
-- Understand the structure of an object file, linking, and the compiler toolchain (`gcc`, `rustc`, `make`, `cargo`).
-- Use `gdb`, `valgrind`, and sanitizers to debug and profile system programs.
-- Master memory layout, pointer arithmetic, and manual memory management in C.
-- Apply Rust’s ownership, borrowing, and smart pointers (`Box`, `Rc`) to the same low‑level concepts.
-- Write a custom memory allocator in C, handling alignment and fragmentation.
-- Understand the memory hierarchy (caches, false sharing) and write cache‑friendly code.
-- Exploit SIMD auto‑vectorization with compiler flags.
-- Create and synchronise processes (`fork`, `exec`) and POSIX threads.
-- Build safe concurrent programs in Rust using `Arc<Mutex<T>>`, channels, and `Send`/`Sync` traits.
-- Design non‑blocking I/O, event loops, and asynchronous applications with `epoll` and `tokio`.
-- Use inter‑process communication: pipes, shared memory (`mmap`/`shm`), and signals.
-- Implement lock‑free data structures and understand memory ordering.
-- Develop a substantial system tool (shell, concurrent server, or memory allocator) and present it as a final project.
+
+By the end of the course, students should be able to:
+
+1. Use C development tools such as `gcc`, `make`, Git, GDB, and Valgrind.
+2. Understand object files, linking, symbols, and program loading.
+3. Understand C memory layout, pointers, structs, alignment, and binary file I/O.
+4. Use Unix system calls for file I/O and process control.
+5. Implement a simple shell using `fork`, `exec`, `wait`, pipes, and redirection.
+6. Implement a simple memory allocator.
+7. Write multithreaded C programs using POSIX threads.
+8. Use synchronization primitives such as mutexes, condition variables, and semaphores.
+9. Understand race conditions, deadlock, livelock, and common concurrency bugs.
+10. Understand IPC mechanisms such as pipes, shared memory, `mmap`, and message queues.
+11. Write basic TCP/UDP socket programs in C.
+12. Understand signals and basic asynchronous event handling.
+13. Compare C with Rust conceptually in terms of memory safety, error handling, and concurrency.
+14. Work on a substantial system-programming project, possibly involving threads, IPC, sockets, and optional GUI visualization.
+
+---
 
 ## Textbooks and Course Material
-- No required textbook.
-- Lecture notes will be posted weekly on Google Classroom, based on:
-  - [System Programming Wiki (Angrave, UIUC)](https://github.com/angrave/SystemProgramming/wiki)
-  - [CS341 Coursebook (UIUC)](https://cs341.cs.illinois.edu/coursebook/index.html)
-  - *The Linux Programming Interface* by Michael Kerrisk ([man7.org](https://man7.org/tlpi/index.html))
-  - *The C Programming Language*, Kernighan & Ritchie (for C reference)
-- Rust resources (free online):
-  - [The Rust Programming Language (Book)](https://doc.rust-lang.org/book/)
-  - [Rust by Example](https://doc.rust-lang.org/rust-by-example/)
-  - [The Rustonomicon](https://doc.rust-lang.org/nomicon/) (for unsafe Rust)
+
+No required textbook.
+
+Lecture notes are posted weekly and are based on previous course materials and the following resources:
+
+- [System Programming Wiki, Lawrence Angrave](https://github.com/angrave/SystemProgramming/wiki)
+- [CS 341 Coursebook, UIUC](https://cs341.cs.illinois.edu/coursebook/index.html)
+- [The Linux Programming Interface, Michael Kerrisk](https://man7.org/tlpi/index.html)
+- [man7.org Linux manual pages](https://man7.org/index.html)
+- *The C Programming Language*, Kernighan and Ritchie
+
+Optional Rust references:
+
+- [The Rust Programming Language](https://doc.rust-lang.org/book/)
+- [Rust by Example](https://doc.rust-lang.org/rust-by-example/)
+
+---
 
 ## Weekly Content
-*(Slight changes may occur during the semester.)*
 
-1. **Course intro, modern Linux architecture, toolchains**  
-   - C/C++/Rust toolchains: `gcc`, `rustc`, `make`, `cargo`, `gdb`.  
-   - Build systems, debugging workflows, and version control (Git).
+Small changes may occur during the semester.
 
-2. **Low‑level execution & ABI**  
-   - Calling conventions, stack frame mechanics, assembly basics.  
-   - Function pointers in C and Rust.
+| Week | Topics | Rust / Comparison Corner |
+|---|---|---|
+| 1 | Course intro, C crash course, `gcc`, Makefiles, Git, object files | `rustc`/`cargo` hello-world |
+| 2 | Macros, pointers, function pointers, structs, alignment, binary file I/O | Rust references, `Box`, `#[repr(C)]` |
+| 3 | System calls, file descriptors, Unix file I/O, `stat`, `lseek` | Rust `Result` vs C `errno` |
+| 4 | Processes: `fork`, `exec`, `wait`, zombies/orphans, simple shell | Rust `Command` vs `fork`/`exec` |
+| 5 | Memory allocators, `malloc`/`free`, `sbrk`, alignment, fragmentation | Rust `Box`/`Vec` and automatic drop |
+| 6 | Intro to threads, POSIX threads, race conditions | Rust `std::thread` |
+| 7 | Thread pools, parallelism, coroutines/green threads conceptually | Rust threads conceptually |
+| 8 | Midterm exam | — |
+| 9 | Synchronization: mutexes, condition variables, semaphores | Rust `Arc<Mutex<T>>` |
+| 10 | Producer/consumer, reader/writer, deadlock, dining philosophers | Rust compile-time race prevention conceptually |
+| 11 | Virtual memory, IPC: pipes, FIFOs, `mmap`, shared memory, message queues | Rust channels conceptually |
+| 12 | Networking intro: TCP/UDP, HTTP conceptually, socket programming I | Optional Python/Java socket comparison |
+| 13 | Socket programming II, client/server design, project networking phase | — |
+| 14 | Signals, signal handlers, `sigaction`, filesystems | — |
+| 15 | Final review and project demos | — |
 
-3. **Memory layout & pointer mechanics**  
-   - Virtual memory space, stack vs. heap allocation.  
-   - Raw pointers vs. Rust smart pointers (`Box`, `Rc`), references and ownership.
+---
 
-4. **Custom memory allocation**  
-   - Writing a `malloc`/`free` allocator in C.  
-   - Memory alignment, fragmentation, and coalescing.
+## Labs and Quizzes
 
-5. **Cache hierarchies & data locality**  
-   - L1/L2/L3 caches, cache lines, false sharing.  
-   - Structure packing and padding (`__attribute__((packed))` in C, `#[repr(C)]` in Rust).
+Labs and quizzes are assigned weekly or near-weekly through Google Classroom and/or GitHub Classroom.
 
-6. **SIMD & vectorization**  
-   - Auto‑vectorization flags (`-O3`, `-mavx2`).  
-   - Brief introduction to SIMD intrinsics (optional).
+They are generally short exercises related to the current topic.
 
-7. **Processes & threads**  
-   - `fork()`, `exec()`, POSIX threads (`pthread_create`).  
-   - Rust thread spawning and basic `std::thread` usage.
+The lowest lab/quiz grade is dropped.
 
-8. **Midterm Exam**
+Examples of lab topics from previous semesters include:
 
-9. **Synchronization & atomics**  
-   - Mutexes, condition variables, semaphores.  
-   - Rust’s `Arc<Mutex<T>>`, `RwLock`, and the concept of interior mutability.
+- Git, Makefiles, and C project setup
+- debugging with GDB and Valgrind
+- LSB steganography using binary file I/O
+- simple shell implementation
+- pipes and redirection
+- memory allocator implementation
+- multithreaded game or simulation
+- thread pools
+- socket-based project phase
+- signals and asynchronous I/O
 
-10. **Concurrent data structures**  
-    - Thread‑safe queues, race conditions, deadlock avoidance.  
-    - Compile‑time race prevention: `Send` and `Sync` traits in Rust.
+Some labs may include small visualization components, but the main graded part is system programming in C.
 
-11. **Asynchronous programming & I/O**  
-    - Non‑blocking I/O, `epoll`, event loops.  
-    - Rust’s `async`/`await` and the `tokio` runtime.
+---
 
-12. **Inter‑process communication**  
-    - Pipes, FIFOs, shared memory (`shmget`, `mmap`), signals.
+## Homework / Coding Assignments
 
-13. **Advanced hardware optimization**  
-    - Lock‑free algorithms, memory barriers, relaxed atomic models.  
-    - Practical examples with C `stdatomic.h` and Rust’s `std::sync::atomic`.
+There will be approximately **3–4 programming assignments** which can be done as **group projects**.
 
-14. **Final project presentations**  
-    - Students present a systems tool / shell / concurrent server / memory allocator showcase.
+Assignments are submitted through Google Classroom and/or GitHub Classroom.
 
-## Quizzes and labs
-- Assigned weekly via Google Classroom and GitHub Classroom.
-- Typically multiple‑choice and short programming exercises related to the week’s topic.
-- Labs will mix C and Rust exercises.
+No late submissions are accepted unless officially approved.
 
-## Homework-coding assignments
-- ~3‑4 programming assignments (including a group project).
-- Submissions through Google Classroom and GitHub Classroom.
-- No late submissions.
+The projects generally involves substantial system-programming concepts. Possible assignment themes include:
 
-## Grading 
-- 10% labs/quizzes (lowest one dropped)
-- 20% midterm exam
-- 30% assignments (group projects)
-- 40% final exam
+- file I/O and binary processing,
+- process management and shell,
+- pipes/redirection,
+- memory allocator,
+- multithreaded application,
+- socket-based client/server system.
 
-## Course sites
-- Assignment grading and small discussions: Google Classroom.
-- Other discussions and Q&A: Piazza (access code provided in class).
-- Submissions: on github
+Examples of possible projects include:
+
+- emergency drone coordination system,
+- communicating shells,
+- concurrent simulation or game backend,
+- client/server monitoring system,
+- distributed task coordinator.
+
+Students may use GUI libraries such as **GTK**, **Qt**, or **SDL** for visualization, but the GUI is not the main focus. The core system logic should demonstrate C/POSIX system-programming concepts.
+
+A short project demo may be done during the final week.
+
+---
+
+## Grading
+
+| Category | Weight |
+|---|---:|
+| Labs / Quizzes | 10% |
+| Midterm Exam | 20% |
+| Programming Assignments / Project | 30% |
+| Final Exam | 40% |
+
+The lowest lab/quiz grade is dropped.
+
+---
+
+## Course Sites
+
+- Assignment submission and grading: Google Classroom and/or GitHub Classroom.
+- Discussion and Q&A: Piazza.
+- Lecture notes: posted weekly.
+
+In discussions:
+
+- Do not post solutions or significant parts of assignments.
+- Do not post unrelated content.
+- Ask questions when you need help.
+- Post helpful answers when you can help others.
+
+---
 
 ## Environment Settings
-- You **must** have a Linux environment (any distribution) or a Unix‑like system (macOS, WSL2).
-- For Windows: WSL2 with `build-essential`, or a virtual machine (VirtualBox / UTM).
-- Install the standard C toolchain and **Rust** (`rustup`, `cargo`):
-  - `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
-- Install `valgrind` (`sudo apt install valgrind`).
-- Have a GitHub account (you can use your university email for benefits).
+
+You should have a Linux installation or Unix-like environment.
+
+Recommended options:
+
+- native Linux,
+- macOS,
+- WSL2 on Windows,
+- Linux virtual machine using VirtualBox, UTM, or similar.
+
+Basic tools:
+
+```bash
+sudo apt update
+sudo apt install build-essential git gdb valgrind
+```
+
+Optional Rust installation:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+Optional GUI libraries, depending on the project:
+
+```bash
+sudo apt install libgtk-3-dev
+# or Qt development packages
+# or SDL2 development packages
+```
+
+Rust and GUI libraries are optional for the core course material. Students should not be blocked by GUI or Rust toolchain problems.
+
+---
 
 ## Collaboration and Cheating Policy
-Plagiarism and cheating are strictly forbidden (see university policy).  
-You may discuss assignments with classmates, but all submitted work must be your own.  
-List any collaborators and references used in your submission.
 
-## Use of AI, GPT, Gemini, DeepSeek, etc. 
-You are free to use AI tools – they can be excellent learning companions. However, over‑reliance may prevent you from developing your own problem‑solving muscles. Use them to learn, not to skip thinking.
+Any kind of plagiarism or cheating is prohibited. Please refer to the university policy.
 
-**The golden rule:** You must always be able to explain every line of code you submit, and you must have written (and understood!) the core logic yourself.
+You may discuss assignments and projects with classmates, but all submitted work must be your own.
 
-Below is a guide on how to use AI responsibly for this course.
+If you benefit from the work of others, list them or the referenced materials in your submission.
 
-### Example Uses and Prompts
+You must be able to explain every significant part of your submitted code.
 
-#### C and Rust Programming Basics
-- *“Write a C program that demonstrates pointer arithmetic on an array. Then rewrite the same algorithm in safe Rust using slices. Explain the differences in memory safety and performance.”*
-- *“Show me how to use `valgrind` to detect a memory leak in my C code. Then run `cargo miri` on a Rust snippet that uses `unsafe` and explain what it reports.”*
+---
 
-#### System Calls and OS Interaction
-- *“Generate a minimal C example using `fork()` and `exec()` to run a child process, and show how to avoid zombie processes with `waitpid`.”*
-- *“My `read()` call keeps returning -1 with `errno == EINTR`. How do I handle this correctly in a signal‑heavy program?”*
-- *“Rewrite this C `fork`/`pipe` example in Rust using `std::process::Command` and `std::io::pipe`. Which version feels safer and why?”*
+## Use of AI Tools
 
-#### Rust Ownership, Smart Pointers, and Lifetimes
-- *“Explain why this Rust code doesn’t compile due to ownership rules, and suggest at least two ways to fix it (e.g., clone, borrow, `Rc<RefCell<T>>`).”*
-- *“Convert a C doubly‑linked list to Rust using raw pointers and `unsafe`. Then try to redesign it using safe Rust with `Option<Box<Node>>`. What are the tradeoffs?”*
-- *“I keep getting ‘use of moved value’ errors. Can you draw a timeline of ownership moves in my code and show me how to restructure it?”*
+You may use AI tools such as GPT, Gemini, DeepSeek, Claude, and similar systems for explanation, debugging, and generating study examples.
 
-#### Memory Management and Custom Allocators
-- *“Outline a simple first‑fit memory allocator in C using an implicit linked list. What are the tradeoffs compared to best‑fit or next‑fit?”*
-- *“How does Rust’s `GlobalAlloc` trait let me plug in a custom allocator? Give a minimal working example that tracks allocation count.”*
+However, over-reliance may prevent you from developing real problem-solving skills.
 
-#### Concurrency and Synchronization
-- *“Show a producer‑consumer solution in C with `pthread_mutex_t` and `pthread_cond_t`. Then show the equivalent in Rust using `std::sync::mpsc` channels. Which is less error‑prone and why?”*
-- *“I have a data race in my multi‑threaded C program. Help me use ThreadSanitizer (`-fsanitize=thread`) to pinpoint it. Then explain how Rust would have caught the same bug at compile time.”*
-- *“What do the `Send` and `Sync` traits mean in Rust? Why does the compiler refuse to send a `MutexGuard` across threads?”*
+The golden rule is:
 
-#### Asynchronous I/O and Networking
-- *“Write a simple TCP echo server using `epoll` in C. Then rewrite it in Rust using `tokio::net::TcpListener` with async/await. Compare code complexity, safety, and performance.”*
-- *“My non‑blocking socket server is spinning the CPU at 100%. How do I properly use `epoll` edge‑triggered mode to avoid this?”*
-- *“What is the difference between `select`, `poll`, and `epoll`? When should I use each?”*
+> You must be able to explain every line of code you submit, and you must have written and understood the core logic yourself.
 
-#### SIMD and Low‑Level Optimization
-- *“Explain what the `-mavx2` flag does and how I can check if my loop was auto‑vectorized by the compiler (using `objdump` or compiler optimization reports).”*
-- *“Give me a short Rust snippet using `std::arch::x86_64::_mm256_add_ps` to add two arrays of floats. How do I ensure alignment?”*
+If you use AI assistance, briefly list it in your submission.
 
-#### Debugging and Tooling
-- *“I’m seeing ‘Broken Pipe’ errors in my client‑server program. What usually causes this, and how do I fix it?”*
-- *“Decode this `strace` output: [paste]. Where is my program blocking, and why isn’t it responding?”*
-- *“My Rust program panics with ‘already borrowed: BorrowMutError’. Can you trace through my `RefCell` usage and show me how to avoid the runtime panic?”*
+Example:
 
-#### General Conceptual Learning
-- *“Summarize the differences between thread‑based concurrency and async/await event loops. When should I choose one over the other?”*
-- *“I’m stuck understanding false sharing. Can you draw a diagram and show how padding fixes it, both in C and in Rust?”*
-- *“Compare the strengths and weaknesses of C versus Rust for system programming. What concrete safety guarantees does Rust provide that C lacks?”*
+> I used an AI assistant to understand Valgrind output and to generate test cases. The code was written by me.
 
-**Final reminder:** AI tools are great for generating examples, explaining error messages, and helping you explore “what if” scenarios – but the real learning happens when you struggle with a problem, fix your own bugs, and internalize *why* things work. Use AI as a smart study partner, not as a substitute for your own thinking.
