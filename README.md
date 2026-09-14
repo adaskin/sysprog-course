@@ -1,16 +1,20 @@
-# BIL 322 System Programming  
+# BIL 322 System Programming
 **Fall 2026, Department of Computer Engineering, Istanbul Medeniyet University**
 
-- [2026 lecture notes](lectures/)  
-- [2025 BIL 222 notes](2025-bil222-lecture-notes/)  
+
+
+- [2026 lecture notes](lectures/)
+- [2025 BIL 222 notes](2025-bil222-lecture-notes/)
 - [2024 BIL 222 notes](https://sites.google.com/view/adaskin/system-programming)
+
+*This document and lecture notes have been rewritten and prepared with the help of different AI tools: mostly Qwen and DeepSeek*
 
 ---
 
 ## Meeting Times
 
-- **Lectures:** Monday @ 501, 12:30  
-- **Labs:** Thursday @ BIL-Lab, 11:30  
+- **Lectures:** Monday @ 501, 12:30
+- **Labs:** Thursday @ BIL-Lab, 11:30
 
 ---
 
@@ -21,42 +25,43 @@ Students are expected to have prior C programming experience and basic knowledge
 A passing grade in **BIL 115** is required.  
 The old equivalent C programming course, such as **BIL 121**, may be considered equivalent.
 
-**No prior Rust experience is required.**  
-Rust appears only through short conceptual examples comparing it with C.
+No prior Rust experience is required. Rust may appear only occasionally through short conceptual examples.
 
 ---
 
 ## Course Overview
 
-> This course introduces Unix/Linux system programming using C as the primary language. Topics include the C toolchain, object files, pointers, memory layout, system calls, file I/O, processes, memory allocators, threads, synchronization, IPC, networking, signals, and filesystems. Selected Rust examples are used to compare modern approaches to memory safety, error handling, and concurrency. The course includes labs and a group project, which may involve sockets, IPC, threads, and optional GUI visualization.
- 
-The course is primarily taught in **C**, because C gives direct access to system calls, memory layout, file descriptors, processes, threads, synchronization, IPC, signals, and sockets.
+This course introduces Unix/Linux system programming using **C** as the primary language.
 
-The first part of the course covers advanced C topics and the C toolchain:
+The course covers the core mechanisms that modern software systems depend on:
 
-- `gcc`, `make`, Git (version control), GDB, Valgrind,
-- macros, pointers, function pointers,
-- structs, alignment, padding,
-- object files and linking,
-- binary file I/O.
-
-The second part covers Unix system programming:
-
+- C toolchain, object files, linking,
+- pointers, memory layout, structs, alignment,
 - system calls and file I/O,
 - processes, `fork`, `exec`, `wait`,
-- simple shell implementation,
+- pipes, redirection, shells,
 - memory allocators,
 - threads and synchronization,
-- deadlocks, producer/consumer, reader/writer,
+- deadlock and concurrency bugs,
 - virtual memory and IPC,
-- pipes, shared memory, message queues,
-- networking and socket programming,
+- networking and sockets,
 - signals,
 - filesystems.
 
-Selected **Rust examples** are used briefly during the semester to compare modern safety mechanisms with C. These examples are conceptual and short. They are not intended to turn the course into a full Rust course.
+Many examples and project ideas are motivated by modern systems use cases, especially **AI infrastructure**, such as:
 
-Some labs and the group project may include visualization or GUI components using libraries such as **GTK**, **Qt**, or **SDL**, but the core system-programming logic is expected to be implemented using C and POSIX APIs.
+- data pipelines,
+- worker processes,
+- request queues,
+- thread pools,
+- batching systems,
+- model-like worker servers,
+- vector search services,
+- concurrent client/server systems.
+
+This is still a system-programming course, not a machine-learning course. The goal is to understand and build the low-level systems that applications such as AI services, servers, data pipelines, and concurrent tools rely on.
+
+Selected Rust examples may be used briefly during the semester to compare memory safety, error handling, or concurrency ideas. These examples are optional, conceptual, and not a major part of the course.
 
 ---
 
@@ -66,23 +71,34 @@ Some labs and the group project may include visualization or GUI components usin
 
 Most lectures, labs, assignments, and projects are in C.
 
-### Rust: short conceptual comparisons only
+C is used because it gives direct access to:
 
-Rust is used only for small examples such as:
+- system calls,
+- file descriptors,
+- processes,
+- memory layout,
+- threads,
+- synchronization,
+- IPC,
+- signals,
+- sockets.
+
+### Rust: occasional conceptual examples only
+
+Rust may appear in very short examples such as:
 
 - ownership versus manual `malloc`/`free`,
-- `Box`/`Vec` versus heap allocation,
 - `Result` versus `errno`,
 - `std::process::Command` versus `fork`/`exec`,
 - `Arc<Mutex<T>>` versus `pthread_mutex_t`.
 
-Students are expected to read and understand simple Rust snippets, but they are not expected to write large Rust programs.
+Students are not expected to write large Rust programs.
 
 Advanced Rust topics such as `tokio`, async, custom Rust allocators, deep lifetimes, and extensive `unsafe` Rust are not required.
 
 ### Other languages
 
-Socket programming may briefly be compared with Python or Java examples, but C remains the main implementation language.
+Python or Java examples may occasionally be used for comparison, especially in networking or high-level API discussions, but C remains the main implementation language.
 
 ---
 
@@ -94,7 +110,7 @@ By the end of the course, students should be able to:
 2. Understand object files, linking, symbols, and program loading.
 3. Understand C memory layout, pointers, structs, alignment, and binary file I/O.
 4. Use Unix system calls for file I/O and process control.
-5. Implement a simple shell using `fork`, `exec`, `wait`, pipes, and redirection.
+5. Implement simple shells or pipeline runners using `fork`, `exec`, `wait`, pipes, and redirection.
 6. Implement a simple memory allocator.
 7. Write multithreaded C programs using POSIX threads.
 8. Use synchronization primitives such as mutexes, condition variables, and semaphores.
@@ -102,8 +118,8 @@ By the end of the course, students should be able to:
 10. Understand IPC mechanisms such as pipes, shared memory, `mmap`, and message queues.
 11. Write basic TCP/UDP socket programs in C.
 12. Understand signals and basic asynchronous event handling.
-13. Compare C with Rust conceptually in terms of memory safety, error handling, and concurrency.
-14. Work on a substantial system-programming project, possibly involving threads, IPC, sockets, and optional GUI visualization.
+13. Apply system-programming concepts to modern application domains such as data pipelines, worker systems, request servers, and simple AI-infrastructure-style projects.
+14. Work on a substantial system-programming project, possibly involving threads, IPC, sockets, signals, and optional GUI visualization.
 
 ---
 
@@ -119,7 +135,7 @@ Lecture notes are posted weekly and are based on previous course materials and t
 - [man7.org Linux manual pages](https://man7.org/index.html)
 - *The C Programming Language*, Kernighan and Ritchie
 
-Optional Rust references:
+Optional Rust references, only if short Rust examples are used:
 
 - [The Rust Programming Language](https://doc.rust-lang.org/book/)
 - [Rust by Example](https://doc.rust-lang.org/rust-by-example/)
@@ -130,23 +146,25 @@ Optional Rust references:
 
 Small changes may occur during the semester.
 
-| Week | Topics | Rust / Comparison Corner |
+Short Rust comparisons may appear occasionally when useful, but Rust is not a weekly topic and is not a major part of the course.
+
+| Week | Core System Programming Topic | Example / Application Focus |
 |---|---|---|
-| 1 | Course intro, C crash course, `gcc`, Makefiles, Git, object files | `rustc`/`cargo` hello-world |
-| 2 | Macros, pointers, function pointers, structs, alignment, binary file I/O | Rust references, `Box`, `#[repr(C)]` |
-| 3 | System calls, file descriptors, Unix file I/O, `stat`, `lseek` | Rust `Result` vs C `errno` |
-| 4 | Processes: `fork`, `exec`, `wait`, zombies/orphans, simple shell | Rust `Command` vs `fork`/`exec` |
-| 5 | Memory allocators, `malloc`/`free`, `sbrk`, alignment, fragmentation | Rust `Box`/`Vec` and automatic drop |
-| 6 | Intro to threads, POSIX threads, race conditions | Rust `std::thread` |
-| 7 | Thread pools, parallelism, coroutines/green threads conceptually | Rust threads conceptually |
+| 1 | Course intro, C toolchain, Git, Makefiles, object files | Why system programming matters for modern systems; simple C benchmark example |
+| 2 | Pointers, memory model, structs, alignment, binary file I/O | Tensor-like buffers, binary layouts, file formats |
+| 3 | Debugging, GDB, Valgrind, Unix file I/O, system calls | Dataset/log/checkpoint file processing |
+| 4 | Processes: `fork`, `exec`, `wait`, zombies/orphans | Worker processes and process supervision |
+| 5 | Pipes, redirection, shell/pipeline implementation | Simple data pipeline: filter / transform / process |
+| 6 | Memory allocators | Tensor arena or memory-pool style allocator |
+| 7 | Threads introduction, POSIX threads, race conditions | Parallel vector/embedding-like computation |
 | 8 | Midterm exam | — |
-| 9 | Synchronization: mutexes, condition variables, semaphores | Rust `Arc<Mutex<T>>` |
-| 10 | Producer/consumer, reader/writer, deadlock, dining philosophers | Rust compile-time race prevention conceptually |
-| 11 | Virtual memory, IPC: pipes, FIFOs, `mmap`, shared memory, message queues | Rust channels conceptually |
-| 12 | Networking intro: TCP/UDP, HTTP conceptually, socket programming I | Optional Python/Java socket comparison |
-| 13 | Socket programming II, client/server design, project networking phase | — |
-| 14 | Signals, signal handlers, `sigaction`, filesystems | — |
-| 15 | Final review and project demos | — |
+| 9 | Synchronization: mutexes, condition variables, semaphores | Thread-safe queues and shared buffers |
+| 10 | Thread pools, producer/consumer, request queues | Request batching or task scheduling |
+| 11 | Deadlock, livelock, reader/writer, dining philosophers | Resource contention in concurrent servers/workers |
+| 12 | Virtual memory and IPC: pipes, FIFOs, `mmap`, shared memory | Shared data loaders or shared embedding/index files |
+| 13 | Networking intro, TCP/UDP, socket programming I | Simple request server or vector-search style service |
+| 14 | Signals, socket programming II, filesystems | Graceful shutdown, health checks, file-based caching |
+| 15 | Final review and project demos | Student project presentations/demos |
 
 ---
 
@@ -158,18 +176,20 @@ They are generally short exercises related to the current topic.
 
 The lowest lab/quiz grade is dropped.
 
-Examples of lab topics from previous semesters include:
+Possible lab topics include:
 
-- Git, Makefiles, and C project setup
-- debugging with GDB and Valgrind
-- LSB steganography using binary file I/O
-- simple shell implementation
-- pipes and redirection
-- memory allocator implementation
-- multithreaded game or simulation
-- thread pools
-- socket-based project phase
-- signals and asynchronous I/O
+- Git, Makefiles, and multi-file C project setup
+- C performance benchmarking and debugging
+- GDB/Valgrind debugging exercises
+- binary file I/O with dataset/tensor-like files
+- simple shell or pipeline runner
+- memory allocator or memory-pool implementation
+- parallel computation with pthreads
+- thread-safe queue or request buffer
+- thread pool or task scheduler
+- IPC worker system
+- socket-based client/server exercise
+- signals and graceful shutdown
 
 Some labs may include small visualization components, but the main graded part is system programming in C.
 
@@ -177,28 +197,32 @@ Some labs may include small visualization components, but the main graded part i
 
 ## Homework / Coding Assignments
 
-There will be approximately **3–4 programming assignments** which can be done as **group projects**.
+There will be approximately **3–4 programming assignments**, which can be done as group projects.
 
 Assignments are submitted through Google Classroom and/or GitHub Classroom.
 
 No late submissions are accepted unless officially approved.
 
-The projects generally involves substantial system-programming concepts. Possible assignment themes include:
+Assignment and project themes may include:
 
 - file I/O and binary processing,
-- process management and shell,
+- process management and pipeline execution,
 - pipes/redirection,
 - memory allocator,
 - multithreaded application,
+- request queue or thread pool,
 - socket-based client/server system.
 
-Examples of possible projects include:
+Example project ideas include:
 
-- emergency drone coordination system,
+- mini inference-like request server,
+- vector search engine,
+- dataset preprocessing pipeline,
+- multi-agent or drone coordination system,
 - communicating shells,
+- model/process supervisor,
 - concurrent simulation or game backend,
-- client/server monitoring system,
-- distributed task coordinator.
+- client/server monitoring system.
 
 Students may use GUI libraries such as **GTK**, **Qt**, or **SDL** for visualization, but the GUI is not the main focus. The core system logic should demonstrate C/POSIX system-programming concepts.
 
@@ -252,7 +276,7 @@ sudo apt update
 sudo apt install build-essential git gdb valgrind
 ```
 
-Optional Rust installation:
+Optional Rust installation, only if you want to try the short Rust examples:
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -297,4 +321,3 @@ If you use AI assistance, briefly list it in your submission.
 Example:
 
 > I used an AI assistant to understand Valgrind output and to generate test cases. The code was written by me.
-
