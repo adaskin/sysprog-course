@@ -2282,9 +2282,7 @@ Also:
 
 ---
 
-## 🧪 Suggested in-class demos
-
-Useful live demos:
+## 🧪 Useful tools summary
 
 1. Compile a simple program step by step:
 
@@ -2303,6 +2301,8 @@ size main
 objdump -h main
 ldd main
 ```
+
+---
 
 3. Print struct sizes with and without packing:
 
