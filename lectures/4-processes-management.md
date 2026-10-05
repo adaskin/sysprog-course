@@ -389,6 +389,48 @@ one log file and things get weird.)*
 
 ---
 
+# 🔁 Reminder: `fwrite` vs `write` (Weeks 2–3)
+
+Same destination (an fd), two layers:
+
+| stdio — buffered | syscall — straight to the kernel |
+|---|---|
+| `fread` / `fwrite` / `fprintf` | `read` / `write` |
+| buffer lives in the `FILE *` (user space) | no buffer — every call is a mode switch |
+| `fflush` pushes the buffer down | nothing to flush |
+
+```text
+fprintf(f, ...) → sits in libc's buffer → eventually one write(2)
+```
+
+Why it matters this week:
+
+- block buffering is why agent logs look **empty until exit** — hence
+  `fflush(stdout)` in long-running agents
+- and why a failed-exec child calls **`_exit(127)`, not `exit(127)`** —
+  `exit` would flush the *parent's* copied buffer into the log twice
+
+---
+
+# 🤔 If stdio Is So Convenient, Why Do We Need `read()`/`write()`?
+
+stdio buffers precisely *because* syscalls are expensive (Act 1's peek
+under the hood). But you drop to the raw layer when:
+
+- **you only have an fd** — pipes, sockets, `dup2` targets; there is no
+  `FILE *` until you `fdopen()`
+- **buffering breaks the semantics** — the agent's log must be visible
+  *now*; readers are polling the file
+- **between `fork()` and `exec()`** — the child's stdio buffers are stale
+  copies of the parent's; don't touch them
+- **the operation *is* fd-level** — `dup2`, `O_APPEND`, nonblocking flags
+
+⚠️ One rule above all: **never mix layers on one channel.**
+`fprintf(f, ...)` and `write(fd, ...)` on the same file = the hidden stdio
+buffer reorders your output. Pick one layer per stream.
+
+---
+
 # 🎭 Act 1: Doing It Properly — `exec`
 
 "Fine," we say, "no more shell-in-the-middle. We'll run the program
