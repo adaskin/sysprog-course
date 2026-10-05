@@ -403,6 +403,8 @@ Same destination (an fd), two layers:
 fprintf(f, ...) → sits in libc's buffer → eventually one write(2)
 ```
 
+---
+
 Why it matters this week:
 
 - block buffering is why agent logs look **empty until exit** — hence
@@ -424,6 +426,8 @@ under the hood). But you drop to the raw layer when:
 - **between `fork()` and `exec()`** — the child's stdio buffers are stale
   copies of the parent's; don't touch them
 - **the operation *is* fd-level** — `dup2`, `O_APPEND`, nonblocking flags
+
+---
 
 ⚠️ One rule above all: **never mix layers on one channel.**
 `fprintf(f, ...)` and `write(fd, ...)` on the same file = the hidden stdio
