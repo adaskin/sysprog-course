@@ -1117,9 +1117,11 @@ The fix — write-then-rename:
 ```c
 FILE *f = fopen("status/task_001.status.tmp", "w");
 fprintf(f, "state: done\nexit_code: 0\n");
-fclose(f);
+fflush(f);                    // stdio → kernel (fclose does this too, but be explicit)
+fsync(fileno(f));             // ask the kernel to flush to the device;
+fclose(f);                    // release the fd
 
-rename("status/task_001.status.tmp", "status/task_001.status");
+rename("status/task_001.status.tmp", "status/task_001.status");   
 ```
 
 `rename()` within one filesystem is **atomic**: readers see either the
@@ -1133,8 +1135,11 @@ Same reason the careful version of `sed` is
 # 🦀 Rust Callout: Atomic Rename
 
 ```rust
-fs::write("status/task_001.status.tmp", "state: done\n")?;
-fs::rename("status/task_001.status.tmp", "status/task_001.status")?;
+let mut f = OpenOptions::new().create(true).write(true).truncate(true)
+    .open("status/task_001.status.tmp")?;
+f.write_all(b"state: done\n")?;
+f.sync_all()?;                        // ← the line that's easy to forget
+fs::rename("status/task_001.status.tmp", "status/task_001.status")?;   
 ```
 
 Same `rename` syscall, same atomicity guarantee — the pattern is the
