@@ -216,8 +216,43 @@ Answer briefly (2–5 sentences each):
 | Bonus | Description |
 | --- | --- |
 | **B1** | Double-free detection: freeing an already-free block prints a warning and does nothing. (How do you know it's free? Refcount is 0 — but be careful about race-free reasoning.) |
-| **B2** | COW helper `void *kv_block_clone(KVPool *, void *ptr)`: if `refcount > 1`, allocate a fresh block, `memcpy`, decrement the old refcount, return the copy; otherwise return the same pointer. Test the diverging-prefix scenario. Note that the pool cannot detect writes: sharing is a contract, and a writer must call this helper *before* modifying a shared block. |
+| **B2** | COW helper `void *kv_block_clone(KVPool *, void *ptr)`: if `refcount > 1`, allocate a fresh block, `memcpy`, decrement the old refcount, return the copy; otherwise return the same pointer. If the pool is exhausted, return `NULL` and leave the original block untouched. Test the diverging-prefix scenario. Note that the pool cannot detect writes: sharing is a contract, and a writer must call this helper *before* modifying a shared block. |
 | **B3** | Thread-safety teaser: wrap alloc/free/share with a single `pthread_mutex_t` and stress-test with 4 threads. (We cover mutexes properly in Week 9.) |
+| **B4** | Read/write API on top of B2, so sharing is used through a small interface instead of raw pointers (see below). Requires B2. |
+
+### Optional API for B2 and B4
+
+Keep these prototypes in a separate header so the graded `kvpool.h` stays
+unchanged. Implement them in `kvpool.c` (the no-`malloc` rule still applies).
+
+```c
+/* kvpool_cow.h — optional bonus API. Not part of the graded header. */
+#ifndef KVPOOL_COW_H
+#define KVPOOL_COW_H
+#include "kvpool.h"
+
+void       *kv_block_clone(KVPool *pool, void *ptr);   /* B2 */
+const char *kv_block_read(KVPool *pool, void *blk);    /* B4 */
+char       *kv_block_write(KVPool *pool, void **blk);  /* B4 */
+
+#endif
+```
+
+**B4 semantics**
+
+- `kv_block_read`: validate `blk` as in `kv_block_free`. Return it as a `const char *` and leave the refcount alone. Return `NULL` (with a warning on `stderr`) for an invalid pointer or a block that is currently free.
+- `kv_block_write`: return a writable pointer. If the block is not shared (`refcount == 1`), return the same pointer. If it is shared, clone it (B2), store the private copy in `*blk`, and return it. Return `NULL` for an invalid or free block, and when the pool is exhausted; in that case `*blk` and all refcounts stay exactly as they were.
+
+**Important:** this is a *convention*, not enforcement. The pool still cannot stop code that kept a raw pointer from writing through it. `kv_block_write` only protects callers who use it, which is why the lecture calls "read-only" a contract. Explain this limitation in `REPORT.md`.
+
+Tests for B4 (put them in a separate `test_bonus.c`, so the required checks stay unaffected):
+
+1. Read of a shared block returns the same address and does not change the refcount.
+2. Write on an unshared block returns the same pointer.
+3. Write on a shared block returns a different pointer with identical contents, `*blk` is updated, the old refcount drops by one, and the new block has refcount 1.
+4. Diverging prefix: after one sharer writes, the other sharer still sees the original bytes.
+5. Write on an exhausted pool returns `NULL` and changes nothing.
+6. Read and write on a pointer outside the pool print a warning and return `NULL`.
 
 ---
 
@@ -257,6 +292,8 @@ test_kvpool.c
 bench.c
 Makefile
 REPORT.md
+kvpool_cow.h    (optional, only with B2/B4)
+test_bonus.c    (optional, only with B2/B4)
 ```
 
 Then paste the repository link into Google Classroom.
