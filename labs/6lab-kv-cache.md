@@ -122,8 +122,23 @@ Implement `kvpool.c`.
   Everything else falls out of them.
 - In `pool_blocks()`, align the **absolute address**, not the offset:
   `(char *)(((uintptr_t)m + 15) & ~(uintptr_t)15)`.
+- Write one small `pool_total(block_size, nblocks)` helper and use it in both
+  `kv_pool_create` and `kv_pool_destroy`. `munmap` must get the same length
+  that `mmap` got: a length that is off by a few bytes can still change the
+  page count, and Valgrind will not warn you about it.
 - Keep a debug function `kv_pool_dump()` (counts free blocks, walks the list)
   behind `#ifdef DEBUG` — it saves hours.
+
+### Optional edge-case handling (not required)
+
+These are not graded, but a robust allocator handles them. If you do, add a
+test for each and mention it in `REPORT.md`.
+
+| # | Edge case | What to do |
+| --- | --- | --- |
+| E1 | **Size overflow:** `nblocks * block_size` (or the total passed to `mmap`) wraps around `size_t`. | Detect it before computing the total and return `NULL` from create. |
+| E2 | **Index range:** `free_head` is a `uint32_t` and `KVPOOL_EMPTY` is `UINT32_MAX`, so a pool needs `nblocks < UINT32_MAX`. | Return `NULL` from create when `nblocks` is too large. |
+| E3 | **Refcount saturation:** `refcount` is a `uint16_t`, so the 65 536th `kv_block_share` would wrap to 0. | Refuse the share with a warning on `stderr` instead of wrapping. Document your choice. |
 
 ---
 
@@ -255,9 +270,18 @@ submit — especially the layout arithmetic. List any AI assistance in
 
 ## ❓ FAQ
 
+**Q: A KV cache grows as the sequence grows. Why does the pool use fixed-size blocks?**
+Because that is how real KV caches are managed. A sequence does not resize one
+big buffer; it takes one more fixed-size block whenever the last one fills up.
+Every block has the same size, so any free block can serve any request, and
+external fragmentation disappears. Allocation, freeing and sharing are all
+per-block O(1) operations, and a shared prompt prefix is just a few shared
+blocks. The price is internal fragmentation: the last block of a sequence is
+usually only partly used. Keep this trade-off in mind for the report.
+
 **Q: Can I use `sbrk` instead of `mmap`?**
 No — the lab requires `mmap`. `mmap` regions can be returned cleanly with
-`munmap`, and `sbrk` behaves badly once threads arrive (Week 9).
+`munmap`, and `sbrk` behaves badly once threads arrive (Week 7).
 
 **Q: Why an index array for the free list instead of storing `next` pointers
 inside free blocks (like the explicit free list in lecture)?**
@@ -266,8 +290,10 @@ baseline: O(1), cache-friendly, and it never fights block alignment.
 
 **Q: My `pool_blocks()` result isn't 16-byte aligned. Why?**
 You aligned the *offset* instead of the *absolute address*. `data[]` does not
-necessarily start at a 16-byte boundary (`offsetof(KVPool, data)` is 24 on
-x86-64). Round the absolute pointer: `((uintptr_t)m + 15) & ~(uintptr_t)15`.
+start at a 16-byte boundary: `offsetof(KVPool, data)` is 20 on x86-64
+(8 + 8 + 4), while `sizeof(KVPool)` is 24 because of tail padding. Don't
+confuse the two. Round the absolute pointer:
+`((uintptr_t)m + 15) & ~(uintptr_t)15`.
 
 **Q: What should `kv_block_free` do with `NULL`?**
 Same convention as libc `free`: silently ignore.
