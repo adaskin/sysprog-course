@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 330" width="1000" height="330" role="img">
+<defs>
+<marker id="ah58a6ff" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/></marker>
+<marker id="ahs58a6ff" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#58a6ff"/></marker>
+<marker id="ahf0883e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f0883e"/></marker>
+<marker id="ahsf0883e" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#f0883e"/></marker>
+</defs>
+<rect x="0" y="0" width="1000" height="330" rx="14" fill="#161b22"/>
+<rect x="20" y="105" width="210" height="120" rx="6" fill="#262c36" stroke="#6e7681" stroke-width="2"/>
+<text x="125" y="126.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">process (before fork)</text>
+<rect x="35" y="150" width="180" height="60" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="125.0" y="170.4" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">stdio buffer</text>
+<text x="125.0" y="189.6" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">launched agent</text>
+<rect x="400" y="25" width="240" height="115" rx="6" fill="#262c36" stroke="#6e7681" stroke-width="2"/>
+<text x="520" y="46.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">parent</text>
+<rect x="415" y="65" width="210" height="60" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="520.0" y="85.4" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">stdio buffer</text>
+<text x="520.0" y="104.6" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">launched agent</text>
+<rect x="400" y="190" width="240" height="115" rx="6" fill="#262c36" stroke="#6e7681" stroke-width="2"/>
+<text x="520" y="211.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">child (got its own copy)</text>
+<rect x="415" y="230" width="210" height="60" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="520.0" y="250.4" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">stdio buffer</text>
+<text x="520.0" y="269.6" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">launched agent</text>
+<path d="M 230,165 L 315,165 L 315,95 L 400,95" fill="none" stroke="#58a6ff" stroke-width="2" marker-end="url(#ah58a6ff)"/>
+<path d="M 230,165 L 315,165 L 315,260 L 400,260" fill="none" stroke="#f0883e" stroke-width="2" marker-end="url(#ahf0883e)"/>
+<text x="272" y="148.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">fork()</text>
+<rect x="740" y="105" width="240" height="120" rx="6" fill="#0d1117" stroke="#6e7681" stroke-width="2"/>
+<text x="860" y="126.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">stdout</text>
+<text x="860" y="165.4" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">launched agent</text>
+<text x="860" y="184.6" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">launched agent</text>
+<path d="M 640,95 L 690,95 L 690,150 L 740,150" fill="none" stroke="#58a6ff" stroke-width="2" marker-end="url(#ah58a6ff)"/>
+<path d="M 640,260 L 690,260 L 690,190 L 740,190" fill="none" stroke="#f0883e" stroke-width="2" marker-end="url(#ahf0883e)"/>
+<text x="690" y="53.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">exit()</text>
+<text x="690" y="71.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">flushes</text>
+<text x="690" y="283.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">exit()</text>
+<text x="690" y="301.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">flushes</text>
+</svg>

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 310" width="1000" height="310" role="img">
+<defs>
+<marker id="ah3fb950" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3fb950"/></marker>
+<marker id="ahs3fb950" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#3fb950"/></marker>
+<marker id="ah6e7681" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#6e7681"/></marker>
+<marker id="ahs6e7681" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#6e7681"/></marker>
+<marker id="ahbc8cff" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#bc8cff"/></marker>
+<marker id="ahsbc8cff" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#bc8cff"/></marker>
+<marker id="ahf0883e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f0883e"/></marker>
+<marker id="ahsf0883e" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#f0883e"/></marker>
+</defs>
+<rect x="0" y="0" width="1000" height="310" rx="14" fill="#161b22"/>
+<text x="20" y="24.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="start" dominant-baseline="central">low addresses</text>
+<text x="980" y="24.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="end" dominant-baseline="central">high addresses</text>
+<rect x="20" y="70" width="150" height="70" rx="6" fill="#262c36" stroke="#6e7681" stroke-width="2"/>
+<text x="95.0" y="94.1" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">text</text>
+<text x="95.0" y="115.9" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">+ rodata</text>
+<rect x="170" y="70" width="90" height="70" rx="6" fill="#262c36" stroke="#6e7681" stroke-width="2"/>
+<text x="215.0" y="105.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">data</text>
+<rect x="260" y="70" width="80" height="70" rx="6" fill="#262c36" stroke="#6e7681" stroke-width="2"/>
+<text x="300.0" y="105.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">bss</text>
+<rect x="340" y="70" width="260" height="70" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
+<text x="470.0" y="105.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="20" font-weight="700" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">heap  ▶</text>
+<rect x="600" y="70" width="140" height="70" rx="6" fill="none" stroke="#6e7681" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="670.0" y="105.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">unmapped</text>
+<rect x="740" y="70" width="240" height="70" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="860.0" y="105.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="20" font-weight="700" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">◀  stack</text>
+<text x="600" y="44.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#3fb950" text-anchor="middle" dominant-baseline="central">program break (brk)</text>
+<path d="M 600,54 L 600,68" fill="none" stroke="#3fb950" stroke-width="2" marker-end="url(#ah3fb950)"/>
+<rect x="40" y="205" width="110" height="40" rx="6" fill="#262c36" stroke="#6e7681" stroke-width="2"/>
+<text x="95.0" y="225.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">"literal"</text>
+<path d="M 95,205 L 95,142" fill="none" stroke="#6e7681" stroke-width="2" marker-end="url(#ah6e7681)"/>
+<text x="95" y="270.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">read-only data</text>
+<rect x="420" y="205" width="90" height="40" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
+<text x="465.0" y="225.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="18" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">*p</text>
+<path d="M 465,205 L 465,142" fill="none" stroke="#3fb950" stroke-width="2" marker-end="url(#ah3fb950)"/>
+<text x="465" y="270.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">the pointee</text>
+<rect x="770" y="205" width="70" height="40" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="805.0" y="225.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="18" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">p</text>
+<rect x="880" y="205" width="90" height="40" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="925.0" y="225.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="18" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">local</text>
+<path d="M 805,205 L 805,142" fill="none" stroke="#f0883e" stroke-width="2" marker-end="url(#ahf0883e)"/>
+<path d="M 925,205 L 925,142" fill="none" stroke="#f0883e" stroke-width="2" marker-end="url(#ahf0883e)"/>
+<text x="855" y="270.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">both live in the stack frame</text>
+<path d="M 770,225 L 512,225" fill="none" stroke="#bc8cff" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#ahbc8cff)"/>
+<text x="641" y="213.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#bc8cff" text-anchor="middle" dominant-baseline="central">p points to *p</text>
+</svg>

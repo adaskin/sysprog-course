@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 320" width="1000" height="320" role="img">
+<defs>
+</defs>
+<rect x="0" y="0" width="1000" height="320" rx="14" fill="#161b22"/>
+<text x="40" y="30.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#9aa4b2" text-anchor="start" dominant-baseline="central">before free(b)</text>
+<rect x="40" y="44" width="200" height="52" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="140.0" y="70.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">A  in use</text>
+<rect x="240" y="44" width="330" height="52" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="405.0" y="70.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">b  8 KB, in use</text>
+<rect x="570" y="44" width="330" height="52" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
+<text x="735.0" y="70.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">C  8 KB, free</text>
+<text x="40" y="124.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#f85149" text-anchor="start" dominant-baseline="central">after free(b): two adjacent holes. A 12 KB request still fails</text>
+<rect x="40" y="138" width="200" height="52" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="140.0" y="164.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">A  in use</text>
+<rect x="240" y="138" width="330" height="52" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
+<text x="405.0" y="164.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">b  8 KB free</text>
+<rect x="570" y="138" width="330" height="52" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
+<text x="735.0" y="164.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">C  8 KB free</text>
+<text x="40" y="218.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#3fb950" text-anchor="start" dominant-baseline="central">coalesce: one 16 KB hole. A 12 KB request now fits</text>
+<rect x="40" y="232" width="200" height="52" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="140.0" y="258.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">A  in use</text>
+<rect x="240" y="232" width="660" height="52" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
+<text x="570.0" y="258.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">b + C  =  16 KB free</text>
+</svg>

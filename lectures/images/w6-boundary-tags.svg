@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 300" width="1000" height="300" role="img">
+<defs>
+<marker id="ahf0883e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f0883e"/></marker>
+<marker id="ahsf0883e" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#f0883e"/></marker>
+</defs>
+<rect x="0" y="0" width="1000" height="300" rx="14" fill="#161b22"/>
+<text x="164" y="86.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">previous</text>
+<text x="472" y="86.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">b  (being freed)</text>
+<text x="780" y="86.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">next</text>
+<rect x="20" y="105" width="44" height="60" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="42.0" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">hdr</text>
+<rect x="64" y="105" width="200" height="60" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="164.0" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">payload</text>
+<rect x="264" y="105" width="44" height="60" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="286.0" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">ftr</text>
+<rect x="308" y="105" width="44" height="60" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="330.0" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">hdr</text>
+<rect x="352" y="105" width="240" height="60" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="472.0" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">payload</text>
+<rect x="592" y="105" width="44" height="60" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="614.0" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">ftr</text>
+<rect x="636" y="105" width="44" height="60" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="658.0" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">hdr</text>
+<rect x="680" y="105" width="200" height="60" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
+<text x="780.0" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">payload</text>
+<rect x="880" y="105" width="44" height="60" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="902.0" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">ftr</text>
+<path d="M 330,167 L 330,215 L 286,215 L 286,167" fill="none" stroke="#f0883e" stroke-width="2" marker-end="url(#ahf0883e)"/>
+<path d="M 614,167 L 614,215 L 658,215 L 658,167" fill="none" stroke="#f0883e" stroke-width="2" marker-end="url(#ahf0883e)"/>
+<text x="20" y="234.8" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#f0883e" text-anchor="start" dominant-baseline="central">previous block's footer sits</text>
+<text x="20" y="255.2" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#f0883e" text-anchor="start" dominant-baseline="central">just before my header</text>
+<text x="980" y="234.8" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#f0883e" text-anchor="end" dominant-baseline="central">next header sits</text>
+<text x="980" y="255.2" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#f0883e" text-anchor="end" dominant-baseline="central">just after my footer</text>
+<text x="500" y="285.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">duplicate the tag at both ends: merge forward and backward in O(1)</text>
+</svg>

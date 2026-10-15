@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 330" width="1000" height="330" role="img">
+<defs>
+</defs>
+<rect x="0" y="0" width="1000" height="330" rx="14" fill="#161b22"/>
+<text x="30" y="32.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" font-weight="700" fill="#f0883e" text-anchor="start" dominant-baseline="central">internal: the block is bigger than the request</text>
+<text x="30" y="56.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="start" dominant-baseline="central">malloc(2 KB) from an allocator that hands out 16 KB blocks</text>
+<rect x="30" y="70" width="118" height="56" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="89.0" y="88.4" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">2 KB</text>
+<text x="89.0" y="107.6" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">used</text>
+<rect x="148" y="70" width="822" height="56" rx="6" fill="#3d1417" stroke="#f85149" stroke-width="2"/>
+<text x="559.0" y="98.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">14 KB wasted inside the block (marked used, unreachable)</text>
+<text x="30" y="176.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" font-weight="700" fill="#f0883e" text-anchor="start" dominant-baseline="central">external: free memory exists, but in pieces</text>
+<text x="30" y="200.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#9aa4b2" text-anchor="start" dominant-baseline="central">malloc(12 KB)</text>
+<rect x="30" y="214" width="376" height="56" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
+<text x="218.0" y="242.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">free 8 KB</text>
+<rect x="406" y="214" width="188" height="56" rx="6" fill="#262c36" stroke="#6e7681" stroke-width="2"/>
+<text x="500.0" y="242.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">used 4 KB</text>
+<rect x="594" y="214" width="376" height="56" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
+<text x="782.0" y="242.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">free 8 KB</text>
+<text x="500" y="300.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" font-weight="700" fill="#f85149" text-anchor="middle" dominant-baseline="central">16 KB free in total, yet no single hole fits 12 KB: malloc fails</text>
+</svg>

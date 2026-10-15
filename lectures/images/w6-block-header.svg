@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 300" width="1000" height="300" role="img">
+<defs>
+<marker id="ah3fb950" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3fb950"/></marker>
+<marker id="ahs3fb950" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#3fb950"/></marker>
+<marker id="ah58a6ff" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/></marker>
+<marker id="ahs58a6ff" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#58a6ff"/></marker>
+<marker id="ahf0883e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f0883e"/></marker>
+<marker id="ahsf0883e" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#f0883e"/></marker>
+</defs>
+<rect x="0" y="0" width="1000" height="300" rx="14" fill="#161b22"/>
+<rect x="30" y="105" width="50" height="60" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="55.0" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">hdr</text>
+<rect x="80" y="105" width="150" height="60" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="155.0" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">payload</text>
+<rect x="230" y="105" width="50" height="60" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="255.0" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">hdr</text>
+<rect x="280" y="105" width="300" height="60" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="430.0" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">payload</text>
+<rect x="580" y="105" width="50" height="60" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="605.0" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">hdr</text>
+<rect x="630" y="105" width="200" height="60" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="730.0" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">payload</text>
+<text x="850" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="30" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">…</text>
+<text x="280" y="42.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="18" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">p = malloc(...)</text>
+<path d="M 280,56 L 280,103" fill="none" stroke="#58a6ff" stroke-width="2" marker-end="url(#ah58a6ff)"/>
+<text x="700" y="42.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#f0883e" text-anchor="middle" dominant-baseline="central">header: size + flags</text>
+<path d="M 700,56 L 605,103" fill="none" stroke="#f0883e" stroke-width="2" marker-end="url(#ahf0883e)"/>
+<path d="M 280,205 L 580,205" fill="none" stroke="#3fb950" stroke-width="2" marker-end="url(#ah3fb950)"/>
+<text x="430" y="228.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#3fb950" text-anchor="middle" dominant-baseline="central">next block = p + size</text>
+<path d="M 255,205 L 255,167" fill="none" stroke="#f0883e" stroke-width="2" marker-end="url(#ahf0883e)"/>
+<text x="255" y="228.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#f0883e" text-anchor="middle" dominant-baseline="central">p - 8</text>
+<text x="30" y="275.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#9aa4b2" text-anchor="start" dominant-baseline="central">free(p) gets only p, so it reads the size from the 8 bytes just before it</text>
+</svg>

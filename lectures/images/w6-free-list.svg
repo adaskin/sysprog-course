@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 390" width="1000" height="390" role="img">
+<defs>
+<marker id="ah3fb950" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3fb950"/></marker>
+<marker id="ahs3fb950" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#3fb950"/></marker>
+<marker id="ah6e7681" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#6e7681"/></marker>
+<marker id="ahs6e7681" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#6e7681"/></marker>
+<marker id="ahf85149" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f85149"/></marker>
+<marker id="ahsf85149" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#f85149"/></marker>
+</defs>
+<rect x="0" y="0" width="1000" height="390" rx="14" fill="#161b22"/>
+<rect x="10" y="10" width="980" height="170" rx="10" fill="#1c2330"/>
+<rect x="10" y="200" width="980" height="180" rx="10" fill="#1c2330"/>
+<text x="30" y="34.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="18" font-weight="700" fill="#f85149" text-anchor="start" dominant-baseline="central">dumb malloc</text>
+<rect x="40" y="80" width="150" height="60" rx="6" fill="#262c36" stroke="#6e7681" stroke-width="2"/>
+<text x="115.0" y="110.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="18" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">your code</text>
+<rect x="790" y="80" width="170" height="60" rx="6" fill="#262c36" stroke="#6e7681" stroke-width="2"/>
+<text x="875.0" y="110.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="18" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">kernel</text>
+<path d="M 190,98 L 790,98" fill="none" stroke="#f85149" stroke-width="2" marker-end="url(#ahf85149)"/>
+<text x="490" y="80.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">malloc(n) → sbrk(n), every single time</text>
+<text x="490" y="125.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#f85149" text-anchor="middle" dominant-baseline="central">free(p) → nothing happens: memory is never reused</text>
+<text x="30" y="224.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="18" font-weight="700" fill="#3fb950" text-anchor="start" dominant-baseline="central">real malloc</text>
+<rect x="40" y="270" width="150" height="60" rx="6" fill="#262c36" stroke="#6e7681" stroke-width="2"/>
+<text x="115.0" y="300.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="18" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">your code</text>
+<rect x="790" y="270" width="170" height="60" rx="6" fill="#262c36" stroke="#6e7681" stroke-width="2"/>
+<text x="875.0" y="300.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="18" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">kernel</text>
+<rect x="380" y="240" width="240" height="120" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
+<text x="500" y="258.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" font-weight="700" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">free list</text>
+<rect x="392" y="285" width="68" height="40" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="426.0" y="305.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">32 B</text>
+<rect x="468" y="285" width="68" height="40" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="502.0" y="305.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">64 B</text>
+<rect x="544" y="285" width="68" height="40" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="578.0" y="305.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">16 B</text>
+<text x="500" y="345.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="13" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">blocks that were freed</text>
+<path d="M 190,285 L 380,285" fill="none" stroke="#3fb950" stroke-width="2" marker-end="url(#ah3fb950)"/>
+<text x="285" y="268.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">malloc: take a block</text>
+<path d="M 380,318 L 190,318" fill="none" stroke="#3fb950" stroke-width="2" marker-end="url(#ah3fb950)"/>
+<text x="285" y="338.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">free: put it back</text>
+<path d="M 620,300 L 790,300" fill="none" stroke="#6e7681" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#ah6e7681)"/>
+<text x="705" y="262.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">only when</text>
+<text x="705" y="280.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">the list is empty</text>
+</svg>

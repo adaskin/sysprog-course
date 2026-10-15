@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 320" width="1000" height="320" role="img">
+<defs>
+</defs>
+<rect x="0" y="0" width="1000" height="320" rx="14" fill="#161b22"/>
+<text x="60" y="30.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#9aa4b2" text-anchor="start" dominant-baseline="central">one free block</text>
+<rect x="60" y="44" width="40" height="52" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="80.0" y="70.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">hdr</text>
+<rect x="100" y="44" width="840" height="52" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
+<text x="520.0" y="70.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="18" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">1024 B free</text>
+<text x="60" y="124.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#3fb950" text-anchor="start" dominant-baseline="central">malloc(24): round up to 32, split off the tail</text>
+<rect x="60" y="138" width="40" height="52" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="80.0" y="164.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">hdr</text>
+<rect x="100" y="138" width="130" height="52" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="165.0" y="164.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">32 B used</text>
+<rect x="230" y="138" width="40" height="52" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="250.0" y="164.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">hdr</text>
+<rect x="270" y="138" width="670" height="52" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
+<text x="605.0" y="164.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="18" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">984 B still free for the next request</text>
+<text x="60" y="218.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#f85149" text-anchor="start" dominant-baseline="central">no split: the whole block is handed out</text>
+<rect x="60" y="232" width="40" height="52" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="80.0" y="258.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">hdr</text>
+<rect x="100" y="232" width="130" height="52" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="165.0" y="258.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">32 B used</text>
+<rect x="230" y="232" width="710" height="52" rx="6" fill="#3d1417" stroke="#f85149" stroke-width="2"/>
+<text x="585.0" y="258.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">992 B wasted inside = internal fragmentation</text>
+</svg>

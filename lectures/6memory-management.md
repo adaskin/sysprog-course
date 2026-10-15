@@ -6,6 +6,8 @@ paginate: true
 size: 16:10
 theme: default
 class: invert
+style: |
+  section img { display: block; margin: 0 auto; }
 ---
 
 # Memory Management
@@ -13,37 +15,24 @@ class: invert
 
 ---
 
-The last two weeks we built the orchestrator: `fork`, `exec`, `wait` and
-redirection in Week 4, then `dup2` and `pipe` in Week 5.
+# 🧭 Today
 
----
+Weeks 4–5 gave us the orchestrator: `fork`, `exec`, `wait`, `dup2`, `pipe`. Now we open the memory box:
 
-**Today**:
-
-1. **What exactly did `fork()` copy?** 
-   - The worker looked like a perfect copy of the orchestrator — but surely it did not duplicate gigabytes instantly?
-
-
+1. **What exactly did `fork()` copy?** Surely not gigabytes, instantly?
 2. **What does `malloc()` really do?** And `free()` returns memory... *to whom?*
-    - Today we build our own allocator ideas 
-   - and finish with the memory workload your projects will actually meet: 
-     - the **KV cache**.
+3. Allocator ideas, ending with the workload your projects will meet: the **KV cache**.
 
 ---
 
 # 🎬 Cold Open: The $10,000 Question
 
-Your orchestrator has loaded:
+Your orchestrator has loaded a 2 GB model file, a 500 MB embedding index and a 300 MB log cache.
+It calls `fork()` 8 times to launch 8 worker agents.
 
-- a 2 GB model-weight file,
-- a 500 MB embedding index,
-- a 300 MB log cache.
+- 🤔 Memory needed: 2.8 GB + 8 × 2.8 GB ≈ **25 GB**?
 
-Assume it calls 8 x `fork()`  to launch 8 worker agents.
-
-- 🤔 The memory machine needs: 2.8 GB + 8 × 2.8 GB ≈ **25 GB**?
-
-The machine is fine. Even `top` barely moves. Why?
+Yet `top` barely moves. Why?
 
 ---
 
@@ -52,10 +41,9 @@ The machine is fine. Even `top` barely moves. Why?
 `fork()` does not copy your memory. It *promises* to copy your memory.
 
 - Parent and child get the same **virtual** address space.
-- The bytes are only duplicated when somebody **writes**.
-- Until then, all 2.8 GB are shared, read-only, between nine processes.
+- Bytes are duplicated only when somebody **writes**.
 
-> it is the reason `fork()` + `exec()` is cheap enough to be the backbone of every shell, every CI system, and every agent orchestrator on Unix.
+> This is why `fork()` + `exec()` is cheap enough to power every Unix shell, CI system, and agent orchestrator.
 
 ---
 
@@ -93,21 +81,15 @@ parent: x = 10 at 0x7ffd3c2a1b4c
 
 🤯 The **same virtual address** holds **two different values** — one per process.
 
-Before the explanation: can you state, in one sentence, what the kernel
-must be doing behind this trick?
+🤔 In one sentence: what must the kernel be doing?
 
 ---
 
-# 🧠 Act 1: The Mental Model of the Week
+# 🧠 Act 1: What the Kernel Did
 
-| Layer | Shared after fork? |
-| --- | --- |
-| Virtual addresses | yes — identical layout in both |
-| Physical bytes | shared *until a write* (copy-on-write) |
-| What each process sees | its own private copy |
+![w:960](images/w6-cow-fork.svg)
 
-The child's `x = 42` triggered a page copy — of just the 4 KB page containing `x`.
-Everything else stayed shared. **The write is the bill collector.**
+**The write is the bill collector.** Same virtual addresses, physical bytes shared until a write.
 
 ---
 
@@ -119,28 +101,22 @@ int *p = malloc(100);
 printf("pid %d got %p\n", getpid(), (void *)p);
 ```
 
-Both processes run this after the fork. Both call `malloc(100)` independently.
-
-🤔 Do they get the same address or different addresses?
-
+🤔 Both processes call `malloc(100)` independently. Same address or different?
 
 ---
 
 # 🔍 Act 1: The Answer — Same Map, Different Territory
 
- **the same virtual address** — their heaps are identical copies with identical allocator state, so both hand out the same virtual pointer. 
- > But the bytes behind that pointer are now two separate physical pages.
+**Same virtual address**: identical heaps with identical allocator state hand out the same pointer.
+Behind it, two separate physical pages.
 
-**Virtual memory: same map, different territory.**
-
-(Notice what just sneaked in: the allocator's own bookkeeping — free lists,
-headers, the break — was copied by `fork()` too. Allocator state is just memory.)
+The allocator's bookkeeping (free lists, headers, the break) was copied too. Allocator state is just memory.
 
 ---
 
 # 📚 Act 1: The Buffer That Printed Twice
 
-Week 4's `_exit(127)` mystery, finally explained. Predict this one:
+Week 4's `_exit(127)` mystery. Predict:
 
 ```c
 #include <stdio.h>
@@ -159,91 +135,43 @@ int main(void) {
 
 # 💥 Act 1: `launched agentlaunched agent`
 
-The stdio buffer lives **in process memory** (user space, in the `FILE`'s buffer).
-`fork()` copied it — buffer and all — into the child.
-Both processes then ran `exit()`, and both flushed *their* copy.
+![w:900](images/w6-stdio-buffer.svg)
 
-Two copies in, two copies out.
+- A failed-exec child calls `_exit(127)`, not `exit(127)`, or it flushes the inherited buffer.
+- Long-running agents `fflush(stdout)`, or the log looks empty.
 
-🤔 Which of our Week 4 habits does this explain?
-
----
-
-# 📚 Act 1: The Rules the Buffer Taught Us
-
-That is why:
-
-- the failed-exec child in Week 4 calls `_exit(127)`, never `exit(127)` —
-  `exit` would flush the inherited buffer and duplicate the orchestrator's output;
-- long-running agents call `fflush(stdout)` (or use `write`) —
-  buffered bytes are invisible to anyone polling the log file;
-- **everything you've allocated is part of what fork copies**: heap blocks,
-  pointers, allocator metadata. All of it — lazily.
-
-Rule: **memory state is process state.** `fork()` inherits all of it.
+**Memory state is process state.** `fork()` inherits all of it.
 
 ---
 
 # 🦀 Rust Callout: No Fork in Safe Rust
 
-Rust's standard library refuses to expose raw `fork()` — and now you can guess why.
-A forked child inherits mutex states, allocator state, open fds... a minefield
-that safe Rust cannot audit. So:
+A forked child inherits mutex states, allocator state, open fds: a minefield safe Rust cannot audit. So:
 
 ```rust
 Command::new("worker").spawn()?;   // fork+exec, hidden and controlled
 ```
 
-If you truly need `fork` in Rust, it lives in `libc::fork()` behind `unsafe` —
-with a "you own every invariant now" warning implied.
-
-(Course note: 🦀 boxes are pattern recognition only. You won't write Rust here.)
+Raw `fork` exists only as `libc::fork()` behind `unsafe`.
+(🦀 boxes are for pattern recognition only; you won't write Rust here.)
 
 ---
 
 # 🗺️ Act 2: The Address Space, Revisited
 
-Week 2's memory layout, now with the week's two protagonists labeled:
+![w:1000](images/w6-address-space.svg)
 
-```
-low addresses                                              high addresses
-[ text ][ data ][ bss ][ heap ━━━━━━━━━▶ ]      [ ◀━━━━━━━━━ stack ]
-                         ↑ program break           (grows downward)
-                       (brk lives here)
-```
+The heap grows toward the **program break**. `malloc` is the manager of that green region.
 
-| Region | Grows? | Managed by |
-| --- | --- | --- |
-| text / data / bss | fixed | loader |
-| heap | expandable | **`malloc` — today's subject** |
-| stack | grows down | kernel, per thread |
+🤔 Week 2 check: where do `local`, `p`, `*p` and `"literal"` live? (Full table: FM 10.)
 
-The heap at the system level is a contiguous range of addresses that the program
-can expand or contract. The border it expands is the **program break**.
-
-🤔 Quick check from Week 2: where do `local`, `*p`, and `"literal"` live?
-
----
-
-# 🗺️ Act 2: Quick Check — the Answers
-
-| Item | Lives in |
-| --- | --- |
-| `local` | stack |
-| the pointer variable `p` itself | stack |
-| the memory `*p` points to | heap |
-| `"literal"` | read-only data (`.rodata`) |
-
-One pointer, two regions: the variable on the stack, the bytes it points to
-on the heap. (The full "where things live" table is Field Manual FM 10.)
+<!-- Ask first, then reveal: cover the bottom half of the figure. -->
 
 ---
 
 # 🎛️ Act 3: Asking the Kernel for More Heap — `brk`/`sbrk`
 
 ```c
-#include <unistd.h>
-
 int   brk(void *addr);               /* set the program break */
 void *sbrk(intptr_t increment);      /* move it by a delta; returns old break */
 ```
@@ -256,18 +184,11 @@ void *top_of_heap2 = sbrk(0);
 printf("Heap grew from %p to %p\n", top_of_heap, top_of_heap2);
 ```
 
-Notes:
-
-- Program break = end of the process's data segment.
-- You should almost never call these directly — use `malloc`.
-- Freshly grown memory is **not zeroed** by your code's standards;
-  the kernel gives you zero pages, but reuse via an allocator needs care.
+Fresh pages from the kernel are zeroed; memory an allocator reuses is not. Applications use `malloc`, not `sbrk`.
 
 ---
 
 # 🧱 Act 3: The World's Dumbest `malloc`
-
-If the heap is just "move the break," then:
 
 ```c
 void *malloc(size_t size) {
@@ -282,108 +203,33 @@ void free(void *p) {
 }
 ```
 
-It even works! So why does libc ship a 10,000-line allocator instead?
+It works! So why does libc ship a 10,000-line allocator?
 
----
-
-# ⏸️ Act 3: Pause — It Works. So Why Is It Terrible?
-
-60–90 seconds. In pairs: this allocator works. Name as many problems with it
-as you can — be specific about what breaks, and when.
-
-🤔 Your candidates, before you turn the page:
-
-- ⁉️
-- ⁉️
-- ⁉️
-
-Next slide: the bill arrives. Check how many you predicted.
+🤔 Name as many problems as you can: what breaks, and when? (Pair exercise, 60–90 s.)
 
 ---
 
 # 💸 Act 3: The Bill for the Dumb Allocator
 
-Three problems, and all three are *this week*:
-
-1. **Every `malloc` is a system call.** Mode switch, kernel work, back.
-   Millions of small allocations → death by a million traps.
-2. **`free` does nothing.** Freed blocks are never reused — a program that
-   allocates/frees in a loop grows without bound until the OOM killer arrives.
-3. **The break only really grows.** Shrinking it back is fragile;
-   memory handed to the OS via `sbrk` rarely goes home.
-
-Real `malloc` fixes #1 and #2 with one idea:
-**keep freed memory in a free list and hand it out again.**
-The kernel is only bothered when the list runs dry.
+1. **Every `malloc` is a system call.** Millions of small allocations, millions of traps.
+2. **`free` does nothing.** An alloc/free loop grows until the OOM killer arrives.
+3. **The break only really grows.** `sbrk` memory rarely goes back to the OS.
 
 ---
 
-# 🧰 Act 4: The C Allocation API
+# 🗃️ Act 3: The Fix — Remember What Was Freed
 
-```c
-#include <stdlib.h>
+![w:920](images/w6-free-list.svg)
 
-void *malloc(size_t size);                         /* uninitialized */
-void *calloc(size_t nmemb, size_t size);           /* zeroed, overflow-checked */
-void *realloc(void *ptr, size_t newsize);          /* resize */
-void  free(void *ptr);                             /* return to the allocator */
-```
-
-Safe allocation pattern — non-negotiable:
-
-```c
-int *ptr = malloc(sizeof(int));
-if (!ptr) {
-    fprintf(stderr, "Allocation failed!\n");
-    exit(EXIT_FAILURE);
-}
-```
-
-❗ Always verify the return value before use.
-❗ `malloc` memory is uninitialized — `memset` (or `calloc`) when you need zeros.
-
----
-
-# 🧱 Act 4: Allocating Structures
-
-```c
-struct foo *ptr = malloc(sizeof(struct foo));
-if (ptr == NULL) abort();
-memset(ptr, 0, sizeof(struct foo));      /* zero initialization */
-
-/* array of pointers */
-int *ptrs[10];
-ptrs[0] = malloc(sizeof(int));
-ptrs[1] = malloc(sizeof(int));
-
-/* pointer to pointer */
-int **dbl_ptr = malloc(sizeof(int *));
-```
-
-And a hand-rolled `calloc` — malloc + zeroing:
-
-```c
-void *calloc(size_t nmemb, size_t size) {
-    size_t total = nmemb * size;
-    void *mem = malloc(total);
-    return mem ? memset(mem, 0, total) : NULL;
-}
-```
-
-✅ Zero-initialization, ✅ modern `calloc` also checks `nmemb * size` for overflow.
+Keep freed memory in a **free list** and hand it out again. The kernel is asked only when the list runs dry.
 
 ---
 
 # 🪦 Act 4: What `free()` Actually Does
 
-Read this carefully — it is the whole act in one paragraph:
-
-- Usually, `free` lets a **later** `malloc` reuse the space.
-- In the meantime, the space stays in your process as part of a
-  **free list** used internally by `malloc`.
-- Occasionally, `free` can actually return memory to the operating system
-  and shrink the process — but do not count on it.
-- **Any use of a pointer that refers to freed space is undefined behavior.**
+- Usually it puts the block on `malloc`'s internal **free list** for a later `malloc` to reuse.
+- Rarely it returns memory to the OS (when, in Act 7).
+- **Using a pointer to freed space is undefined behavior.**
 
 ```c
 int *ptr = malloc(sizeof(*ptr));
@@ -414,17 +260,11 @@ void free_chain(struct chain *head) {
 }
 ```
 
-🔁 **Golden rule: free child resources before the parent structure.**
-Free `temp` first and `temp->name` becomes a dangling dereference.
-
-🤔 Orchestrator translation: a Task owns its log path, its command line,
-its report buffer. Tear down the children, then the Task, then the table slot.
+🔁 **Free children before the parent.** Orchestrator version: a Task's log path, command line and buffers, then the Task, then its table slot.
 
 ---
 
 # 🧱 Act 4: Inside `malloc` — The Heap Is a List of Blocks
-
-The heap is not a shapeless blob. It is a **list of blocks**, each wearing a header:
 
 ```
 [ header | payload bytes ........................ ]
@@ -433,17 +273,16 @@ The heap is not a shapeless blob. It is a **list of blocks**, each wearing a hea
    ↑ size + flags       ↑ what malloc returns (16-byte aligned)
 ```
 
-🤔 Notice something: `malloc` returns a pointer to the payload — the bytes
-you asked for. But then... where does it store the block's size? Somebody has
-to remember how big each block is, or `free` could never find anything.
+🤔 `malloc` returns a pointer to the payload. `free(p)` gets only `p`.
+Where is the block's size stored?
 
-Think for ten seconds before the next slide.
+<!-- Pause ~10 seconds. -->
 
 ---
 
-# 🧱 Act 4: Inside `malloc` — The Header Struct
+# 🧱 Act 4: The Size Lives in a Header
 
-The size lives in a **header**, placed just before the payload:
+![w:860](images/w6-block-header.svg)
 
 ```c
 typedef struct {
@@ -452,18 +291,13 @@ typedef struct {
 } block;
 ```
 
-Why can flags hide in the low bits of `size`?
-Because blocks are **aligned to 16-byte multiples**, so the low bits are always 0.
-
-This is exactly the shape of the `Tag` + `Block` structs we wrote in class
-for `mymalloc` — keep that code open, it comes back in Act 10.
+Flags fit in the low bits because sizes are multiples of 16. Same shape as `Tag` + `Block` in our in-class `mymalloc`.
 
 ---
 
 # 🕵️ Act 4: The Implicit Free List
 
-Simplest navigation scheme: no list of free blocks at all.
-Just walk **every** block in address order using the size field:
+Walk **every** block in address order using the size field:
 
 ```c
 block *heap_start;                    /* first block, from sbrk/mmap */
@@ -480,30 +314,16 @@ static block *find_fit(size_t size) {
 }
 ```
 
-`malloc` = find a free block that fits (+ split it if oversized).
-`free` = clear the ALLOC bit (+ merge with neighbors — coming up).
+`malloc` = find a free block that fits (+ split it). `free` = clear the ALLOC bit (+ merge neighbors).
 
 ---
 
 # ✂️ Act 4: Splitting — Don't Waste the Tail
 
-A 1 KB free block can serve a 24-byte request... but it shouldn't, wholesale:
-
-```
-before:  [ header | 1024 bytes free ............................. ]
-malloc(24):
-after:   [ header | 24 bytes alloc ][ header | 976 bytes free .. ]
-```
-
-🤔 What should `malloc` do with the leftover ~1000 bytes? Burning the whole
-block would waste 97% of it; there must be a better move.
-
----
-
-# ✂️ Act 4: Splitting — the Code
+![w:860](images/w6-split.svg)
 
 ```c
-static void split(block *b, size_t size) {
+static void split(block *b, size_t size) {   /* size: multiple of 16 */
     if (SIZE(b) < size + MIN_BLOCK) return;        /* remainder too small */
     block *rest = (block *)(b->data + size);
     rest->size  = SIZE(b) - size - sizeof(block);  /* new free block */
@@ -511,95 +331,40 @@ static void split(block *b, size_t size) {
 }
 ```
 
-Without splitting, every small allocation causes **internal fragmentation** —
-the block is marked used, and the wasted tail is unreachable.
-
-Alignment note: payload starts must stay 16-byte aligned.
-Unaligned access costs performance — or crashes on some architectures.
-
 ---
 
 # 🧲 Act 4: Coalescing — Holes Want to Merge
 
-`free` does more than flip a bit. Two adjacent free blocks are really one block:
+![w:900](images/w6-coalesce.svg)
 
-```
-before free(b):  [ A alloc ][ b alloc ][ C free ]
-after free(b):   [ A alloc ][ b free  ][ C free ]   ← two holes...
-coalesce:        [ A alloc ][ b + C merged free ]   ← ...one bigger hole
-```
+**Next** block? Step forward by size. **Previous** block? Step *backward*... by what?
 
-Merging matters because big holes serve big requests: two 8 KB splinters
-side by side can satisfy a 12 KB request that neither could alone.
+🤔 Hint: the answer can live inside the blocks. What could you duplicate, and where?
 
-How do we find the **next** block? Walk forward by size. Easy.
-How do we find the **previous** block? Walk *backward*... by what?
-
----
-
-# ❓ Act 4: Pause — Finding the Previous Block
-
-This is the puzzle the classic allocators had to solve. Take thirty seconds.
-
-We know how to step forward: header at `b`, payload of `SIZE(b)` bytes,
-next header right after.
-
-But at `free(b)`, to merge backward we need the block *before* `b` —
-its start address and its size. From `b` alone... how?
-
-🤔 Hint: everything you need is allowed to live inside the heap itself —
-in the blocks. What could you duplicate, and where?
-
-Next slide: the classic answer — beautifully simple, easy to get wrong.
+<!-- Pause ~30 seconds. -->
 
 ---
 
 # 🏷️ Act 4: Boundary Tags — Headers at Both Ends
 
-Duplicate the header at the **end** of each block:
-
-```
-[ btag | payload .................. | btag ]
-   ↑ header copy                      ↑ footer copy
-```
+![w:860](images/w6-boundary-tags.svg)
 
 ```c
 typedef struct { size_t size_flags; } btag;
 
 #define FOOTER(b)   ((btag *)((char *)(b) + sizeof(btag) + SIZE(b)))
-/* the previous block's footer sits directly before our header: */
-#define PREV_TAG(b) ((btag *)(b) - 1)
+#define PREV_TAG(b) ((btag *)(b) - 1)     /* previous block's footer */
 ```
 
-On `free(b)`:
-
-- look at `FOOTER(b) + 1` (next header) → merge forward if free;
-- look at `PREV_TAG(b)` (previous footer) → merge backward if free.
-
-O(1) in both directions. That is what "pointer arithmetic and coalescing"
-in the allocator-challenges list actually means.
-
----
-
-# 🕵️ Act 4: Pause — Our Search Walks Allocated Blocks, Too
-
-Look back at `find_fit` (two slides ago). To find one free block,
-we step over *every* block — allocated ones included.
-
-🤔 As the heap fills up, most blocks are allocated. So our "find a free block"
-search is mostly... walking over blocks we already know we can't use.
-
-How would you skip them? Where would you keep the list of only the free ones —
-and what memory would it cost?
-
-Thirty seconds, then the classic trick.
+On `free(b)`: next header is `FOOTER(b) + 1`, previous footer is `PREV_TAG(b)`. Merge either side if free.
 
 ---
 
 # 🗃️ Act 4: Explicit Free Lists — Skip the Busy Blocks
 
-The implicit list walks *everything* — allocated or not. Slow when the heap is
-mostly full. Faster: keep a linked list of **only free blocks**:
+`find_fit` walks allocated blocks too. 🤔 How would you skip them?
+
+Keep a linked list of **only free blocks**:
 
 ```c
 struct block {
@@ -609,87 +374,25 @@ struct block {
 };
 ```
 
-Trick worth savoring: a free block's payload is unused — so the `next` pointer
-lives **inside the payload itself**. Zero extra memory.
-
-- `malloc`: search the free list only.
-- `free`: insert into the free list (at head = O(1); in address order = easy coalescing).
-
-Variants you'll meet in the wild: segregated lists, slabs, arenas — Act 6.
+A free block's payload is unused, so `next` costs **zero extra memory**.
+`malloc` searches only the free list; `free` inserts (at head = O(1); in address order = easy coalescing).
 
 ---
 
 # 🎯 Act 5: Where Does a Block Go? Placement Strategies
 
-A request arrives; several holes could hold it. Which one wins?
+![w:960](images/w6-placement.svg)
 
-| Strategy | Rule |
-| --- | --- |
-| First fit | first hole big enough — stop searching |
-| Next fit | like first fit, but resume where the last search ended |
-| Best fit | smallest hole that fits |
-| Worst fit | largest hole available |
+First fit: simple, fast enough. Best fit: tight, but leaves dust. Worst fit: sounds smart, isn't.
+🤔 Vote: which would you ship?
 
-🤔 Vote: which would you ship? Which sounds smart but isn't?
+**Optimal allocation is a knapsack problem, NP-hard.** Real allocators are heuristics tuned for a *workload*. (Cheat sheet: FM 5.)
 
 ---
 
-# ⚖️ Act 5: The Trade-Off Table
+# 🕳️ Act 6: Fragmentation — Predict
 
-| Strategy | Search cost | Notes |
-| --- | --- | --- |
-| First fit | O(n) | simple, fast enough; fragments the front of the heap |
-| Next fit | O(1)* | faster still, but spreads fragmentation everywhere |
-| Best fit | O(n)** | tightest fit; leaves a dust of tiny unusable holes |
-| Worst fit | O(n)** | keeps holes large; rarely practical in practice |
-
-\* amortized by remembering position. ** improvable with a min/max heap or size-indexed lists.
-
-The uncomfortable truth: **optimal allocation is the knapsack problem — NP-hard.**
-Every real allocator is a bundle of heuristics tuned for a *workload*:
-
-- allocation is application-dependent;
-- minimize fragmentation, keep search fast, keep coalescing cheap — pick your balance.
-
----
-
-# 🕳️ Act 6: Fragmentation — Predict the Wastes
-
-Two wastes are possible in any allocator. Before naming them, spot them yourself.
-
-**Case 1.** The allocator only hands out blocks in multiples of 16 KB.
-Your program calls `malloc(2048)`.
-
-```
-[ allocated 16KB block ─── real use: 2KB ─── ? ]
-```
-
-🤔 What, exactly, is being wasted here? Whose fault is it — the program's or
-the allocator's?
-
----
-
-# 🕳️ Act 6: Internal Fragmentation
-
-**Internal fragmentation** — the block is bigger than the request:
-
-```
-malloc(2KB) on a system handing out 16KB blocks:
-[ allocated 16KB ─── real use 2KB ─── 14KB wasted inside ]
-```
-
-The 14 KB is inside an allocated block — marked used, unreachable to anyone.
-It is not a bug; it is the price of fixed block sizes and alignment.
-
-(Keep this picture — it comes back when we judge the KV pool at the end.)
-
-Now the second case.
-
----
-
-# 🕳️ Act 6: External Fragmentation — Predict
-
-**Case 2.** The heap contains, in address order:
+The heap contains, in address order:
 
 ```
 [ free 8KB ][ used 4KB ][ free 8KB ]
@@ -697,28 +400,16 @@ Now the second case.
 
 Your program calls `malloc(12KB)`.
 
-🤔 There are 16 KB of free memory in total. Does the request succeed?
-If not — why not, in one sentence?
+🤔 16 KB is free in total. Does the request succeed? If not, why not?
 
 ---
 
-# 🕳️ Act 6: External Fragmentation — and the 50% Rule
+# 🕳️ Act 6: Two Ways to Waste Memory
 
-**External fragmentation** — enough free memory exists, but scattered:
+![w:960](images/w6-fragmentation.svg)
 
-```
-[ free 8KB ][ used 4KB ][ free 8KB ]
-→ 16KB free in total, yet malloc(12KB) FAILS
-```
-
-The "50% rule" intuition: first-fit leaves, on average, half-sized
-splinters after each split. Splinters multiply. Eventually
-`malloc` fails while `top` says memory is available. Users file bugs.
-
-| Disease | Waste lives... |
-| --- | --- |
-| Internal fragmentation | *inside* allocated blocks (block > request) |
-| External fragmentation | in *scattered free holes* that no request fits |
+The "50% rule" intuition: first fit leaves splinters after each split, and they multiply until `malloc` fails while `top` shows free memory.
+Internal fragmentation is the price of fixed block sizes. It comes back with the KV pool.
 
 ---
 
@@ -734,49 +425,38 @@ while (running) {
 }
 ```
 
-RSS (resident memory) climbs slowly forever. No leak — every `malloc` is freed.
+RSS (resident memory) climbs slowly forever. No leak: every `malloc` is freed.
 
-🤔 What is happening? Name the disease before the next slide.
+🤔 What is happening?
 
 ---
 
 # 🧠 Act 6: The Diagnosis
 
-**External fragmentation**: the free list is full of holes that don't fit
-incoming sizes. The allocator keeps growing the heap instead of reusing.
-
+**External fragmentation**: the free holes don't fit incoming sizes, so the allocator grows the heap instead.
 RSS climbs without a single leaked byte.
 
-This is why long-lived servers care deeply about allocator design —
-and why you sometimes see a periodic "restart to reclaim memory" ritual.
+That is why long-lived servers care about allocator design (or restart periodically).
 
 ---
 
 # 🛠️ Act 6: The Professional Countermeasures
 
-**Segregated (size-class) lists** — one free list per size class:
+**Segregated (size-class) lists**: one free list per size class. Search is nearly O(1), same-sized holes reuse each other.
 
 ```
 16B | 32B | 64B | 128B | 256B | ...
 ```
 
-Search is nearly O(1), and same-sized holes reuse each other perfectly.
-
-**Buddy allocator** — split blocks in powers of two; a block's *buddy*
-(the other half) is computable by XOR, so coalescing is instant:
+**Buddy allocator**: split in powers of two; a block's buddy is found by XOR, so coalescing is instant.
 
 ```
 1024 → 512 + 512 → 256 + 256 + 512
 ```
 
-**Slab allocation** — pre-allocated caches of fixed-size objects
-(the kernel's own trick for `task_struct`-sized things).
-
-**Arena allocators** — one big region, bump-pointer allocation, free everything
-at once. (Our agents will love this one — Act 9.)
-
-**Memory tagging** — e.g. ARM MTE: hardware tags each allocation to catch
-use-after-free at runtime. Security meets the allocator.
+**Slab**: caches of fixed-size objects (the kernel's trick for `task_struct`).
+**Arena**: one region, bump pointer, free everything at once (Act 9).
+**Memory tagging** (e.g. ARM MTE): hardware tags catch use-after-free at runtime.
 
 ---
 
@@ -786,83 +466,41 @@ use-after-free at runtime. Security meets the allocator.
 void *realloc(void *ptr, size_t newsize);
 ```
 
-A naive mental model: allocate new, copy `min(old, new)`, free old.
-
-```c
-void *result = malloc(newsize);
-memcpy(result, ptr, newsize < oldsize ? newsize : oldsize);
-free(ptr);
-return result;
-```
-
-Reality has **three outcomes**, and only two of them are moves:
-
-1. **Same place** — the block can grow in situ (next block is free). Pointer unchanged.
-2. **New place** — a bigger block elsewhere; data copied; old block freed.
-3. **NULL** — failure. **The old block is still alive and still yours.**
-
-Outcome 3 is where the famous bug lives. Next slide.
+1. **Same place**: grows in place (next block is free). Pointer unchanged.
+2. **New place**: bigger block elsewhere; data copied; old block freed.
+3. **NULL**: failure. **The old block is still alive and still yours.**
 
 ---
 
 # 💣 Act 7: The One-Line Memory Leak
 
-Read this program. It looks fine. It is not.
+Looks fine. It is not.
 
 ```c
 int *array = malloc(2 * sizeof(int));
 array[0] = 10; array[1] = 20;
 
 array = realloc(array, 3 * sizeof(int));   /* 🤔 what if this returns NULL? */
-array[2] = 30;                             /* segfault — and the old block is orphaned */
+array[2] = 30;
 ```
 
-🤔 Trace the failure path out loud: what does `realloc` return when the heap
-is exhausted, and what has just happened to our only pointer to the
-original block?
-
----
-
-# 💣 Act 7: Pause — What Just Broke?
-
-Two independent disasters in two lines:
-
-1. If `realloc` failed, it returned `NULL` — so `array = NULL`, and
-   `array[2] = 30` writes to address 0. **Crash.**
-2. Worse: assigning to `array` **overwrote our only pointer** to the
-   original 2-int block. It is still allocated, still ours — and now
-   unreachable. Even if we survive the crash, we can never `free` it. **Leak.**
-
-Classic leak + crash combo, from one missing variable.
+🤔 If the heap is exhausted, what does `realloc` return, and what happens to our only pointer to the original block?
 
 ---
 
 # 📐 Act 7: The Fix — Stage Through a Temporary
 
-The fix — always stage through a temporary:
+![w:960](images/w6-realloc-leak.svg)
 
 ```c
 void *tmp = realloc(array, 3 * sizeof(int));
-if (tmp == NULL)      { /* handle failure; array is still valid! */ }
-else if (tmp == array){ /* grew in place */ array[2] = 30; }
-else                  { array = tmp;       array[2] = 30; }
-```
-
-A safe wrapper (from the field):
-
-```c
-void *xrealloc(void *ptr, size_t size) {
-    void *value = realloc(ptr, size);
-    if (value == NULL) perror("Virtual memory exhausted");
-    return value;
-}
+if (tmp == NULL) { /* handle failure; array is still valid! */ }
+else             { array = tmp; array[2] = 30; }
 ```
 
 ---
 
 # 🗺️ Act 7: Growing Up — `sbrk` vs `mmap`
-
-Where does `malloc` get fresh memory? Two doors:
 
 | `sbrk` | `mmap` |
 | --- | --- |
@@ -870,19 +508,15 @@ Where does `malloc` get fresh memory? Two doors:
 | Easy to expand the heap | Handles large blocks efficiently |
 | Cannot really return memory to the OS | `munmap` returns memory to the OS cleanly |
 
-Modern allocators use both:
-
-- small requests → the `sbrk`-backed heap with free lists;
-- large requests (glibc default threshold: **128 KB**) → private `mmap` regions,
-  which can be handed straight back on `free`.
-
-That is the "occasionally, `free` actually shrinks the process" clause, mechanized.
+Modern allocators use both: small requests from the `sbrk` heap with free lists; large ones
+(glibc default: **128 KB**) from private `mmap` regions, handed straight back on `free`.
+That is how `free` "rarely" returns memory to the OS.
 
 ---
 
 # 🧟 Act 8: The Heap Failure Taxonomy
 
-You already met these in Week 2's bug list. Now you know the machinery they break:
+Week 2's bug list, now with the machinery they break:
 
 | Bug | Mechanism | Symptom |
 | --- | --- | --- |
@@ -891,10 +525,8 @@ You already met these in Week 2's bug list. Now you know the machinery they brea
 | Double free | same pointer freed twice | allocator metadata corrupted |
 | Heap overflow | write past the payload | clobbers the *next block's header* |
 
-The last one is why heap bugs are security bugs: overflow a payload and you
-rewrite a header — now `malloc` trusts attacker-shaped size fields.
-
-Defenses: `free(p); p = NULL;`, bounds checks, Valgrind, ASan (Field Manual FM 7).
+Heap bugs are security bugs: overflow a payload, rewrite the next header, and `malloc` trusts attacker-controlled sizes.
+Defenses: `free(p); p = NULL;`, bounds checks, Valgrind, ASan (FM 7).
 
 ---
 
@@ -916,31 +548,18 @@ $ valgrind --leak-check=full ./a.out
 ==3131==  40 bytes in 1 blocks are definitely lost   ← if we'd skipped free()
 ```
 
-Compile with `-g` so the report names your source lines.
-Cheap alternative for speed: `gcc -fsanitize=address` (ASan).
-
----
-
-# ⏸️ Act 9: Pause — An Agent Leaks. Now What?
-
-Your orchestrator supervises eight workers. One of them leaks — its RSS
-climbs and climbs, and it is *your* machine it is climbing on.
-
-🤔 From everything you know so far (Week 4's fork/exec gap, today's
-`setrlimit`...), what can the orchestrator do — preferably *before* the leak
-ever starts? Thirty seconds, in pairs.
+Compile with `-g` for source lines. Faster alternative: `gcc -fsanitize=address` (ASan).
 
 ---
 
 # 🤖 Act 9: Memory Management for Agents
 
-Why does an orchestrator care about all this? Three direct applications:
+One of eight workers leaks, and its RSS climbs on *your* machine.
+🤔 Using Week 4's fork/exec gap, what can the orchestrator do *before* the leak starts?
 
-**1. Isolation is a feature.** Each worker is a process → separate address space.
-A leaking or corrupted agent dies alone; the orchestrator survives.
-(Week 4's "processes vs threads" table, now with full understanding.)
+**1. Isolation is a feature.** Each worker has its own address space; a leaking agent dies alone.
 
-**2. Limits between fork and exec — the gap again!**
+**2. Set limits between fork and exec:**
 
 ```c
 #include <sys/resource.h>
@@ -949,38 +568,32 @@ setrlimit(RLIMIT_AS, &r);        /* cap this agent's address space at 256 MB */
 execvp(program, argv);
 ```
 
-An agent that leaks toward 256 MB gets `ENOMEM` instead of taking the machine down.
-
-**3. OOM is real.** If the fleet leaks past physical memory, the kernel's
-OOM killer picks a victim by score. Guess whose agent framework it often picks.
+A leaking agent gets `ENOMEM` instead of taking the machine down.
+**3. OOM is real:** if the fleet exceeds RAM, the kernel's OOM killer picks a victim by score.
 
 ---
 
-# 🏟️ Act 9: Pause — The Request Allocation Pattern
+# 🏟️ Act 9: The Request Allocation Pattern
 
-Look at how a single agent task actually uses memory:
-
-- it allocates many small objects while working,
-- they are all needed only until the task ends,
-- then none of them are needed. Ever again.
+One agent task makes dozens of small allocations, all dead the moment the task ends:
 
 ```c
-char *prompt   = ...;   /* task starts  */
-char *tokens   = ...;
-char *scratch  = ...;
-/* ... 40 more small allocations ... */
+char *prompt  = ...;
+char *tokens  = ...;
+char *scratch = ...;   /* ...and 40 more */
 /* task ends: none of these are needed anymore */
 ```
 
-🤔 Given that pattern... how many `free()` calls should a whole task need?
-What would the allocation function look like if you exploited this?
+🤔 How many `free()` calls should a whole task need? How would you exploit this?
 
 ---
 
 # 🏟️ Act 9: Arena Allocators — the Agent Pattern
 
-Agents do short-lived, batch-style work: allocate many objects during a task,
-need none of them after it. So stop freeing individually:
+```
+buf:  [ prompt | tokens | scratch |            free            ]
+      0                           ↑ used  →                  cap
+```
 
 ```c
 typedef struct { char *buf; size_t used, cap; } Arena;
@@ -995,29 +608,23 @@ void *arena_alloc(Arena *a, size_t n) {
 ```
 
 Task ends → `free(a->buf)`. **One free.** Leaks are structurally impossible.
-
-This is the "tensor arena / memory pool" pattern — used by inference engines
-(KV caches!), game engines, request servers. It is the soul of this week's lab,
-and Act 10 shows you the workload that makes it necessary.
+The pattern of inference engines, game engines and request servers, and the core of this week's lab.
 
 ---
 
 # 🤖 Act 10: The Ultimate Agent Workload — the KV Cache
 
-In transformer-based inference, every active request keeps intermediate state
-for the tokens processed so far — the **KV cache**.
+In transformer inference, each active request keeps state for the tokens processed so far: the **KV cache**.
 
-We do **not** care how it is computed. This is a systems course, not an ML one.
-Systems view only:
+We don't care how it is computed. Systems view only:
 
 - a **large** memory region (often gigabytes),
 - that **grows** as the sequence grows,
-- is made of many **blocks**,
+- made of many **blocks**,
 - may be **shared** between requests,
 - and must be **freed** when the request ends.
 
-That is not machine learning. That is *this lecture*: allocation, reuse,
-sharing, fragmentation, cleanup.
+That is *this lecture*: allocation, reuse, sharing, fragmentation, cleanup.
 
 ---
 
@@ -1036,13 +643,11 @@ seq_len = 4096  dtype = 2 bytes   batch = 1
 2 × 32 × 32 × 128 × 4096 × 2 ≈ 2 GiB  — per single request
 ```
 
-Batch of 8 → **≈ 16 GiB**. One machine, a handful of concurrent agents.
+Batch of 8 → **≈ 16 GiB**.
 
-🤔 Take 60 seconds and redo the plug-in yourself — then vary one knob
-(e.g. batch = 32) and feel the number run away from you.
+🤔 Redo the calculation, then vary one knob (e.g. batch = 32). Memory like this cannot be managed casually.
 
-Even when the exact numbers change with every new model, the systems lesson
-doesn't: memory like this cannot be managed casually.
+<!-- ~60 seconds. -->
 
 ---
 
@@ -1068,35 +673,24 @@ typedef struct {
 
 ---
 
-# 🧱 Act 10: The Padding — and the Costume
+# 🧱 Act 10: The Padding — and the Same Old Arithmetic
 
-Between `flags` and `size`: `size_t` wants 8-byte alignment, but `flags`
-ends at offset 20 — so the compiler inserts **4 bytes of padding**,
-and `KVHeader` is 32 bytes, not 28.
+```
+ 0         4         8         12        16  18  20        24        32
+ [ req_id ][layer_id][tok_beg ][tok_cnt ][rc][fl][  pad   ][  size  ]
+                                                     ↑ 4 pad bytes
+```
 
-Same lesson as Week 2's struct packing: if two programs disagree about this
-layout, one of them is reading garbage.
-
-And the bigger picture: this is the `Tag` + `Block` pair from our in-class
-`mymalloc` code, wearing an inference costume.
-
----
-
-# 🕵️ Act 10: Same Pointer Arithmetic, New Costume
+`size_t` needs 8-byte alignment, so `KVHeader` is 32 bytes, not 28. Our `mymalloc` `Tag` + `Block`, in an inference costume:
 
 ```c
-/* recover the header from a payload pointer */
+/* header from payload */
 KVBlock *b = (KVBlock *)((char *)payload - offsetof(KVBlock, data));
-
-/* step to the next block */
+/* next block */
 KVBlock *next = (KVBlock *)((char *)b + offsetof(KVBlock, data) + b->hdr.size);
 ```
 
-Contrast the dangerous style: `(KVBlock *)payload - 1` — works today,
-breaks silently the day someone adds a field to the header. `offsetof` doesn't.
-
-`mymalloc`'s `next_block()` did exactly this walk.
-The names changed; the arithmetic didn't.
+Avoid `(KVBlock *)payload - 1`: it breaks silently when someone adds a header field. `offsetof` doesn't.
 
 ---
 
@@ -1110,8 +704,7 @@ char *kv = malloc(huge_size);
 kv = realloc(kv, bigger);
 ```
 
-🤔 Vote: what breaks **first** in a long-running server with many concurrent
-requests? Name your candidate before the next slide.
+🤔 What breaks **first** in a long-running server with many concurrent requests?
 
 ---
 
@@ -1119,20 +712,16 @@ requests? Name your candidate before the next slide.
 
 - size changes → repeated `realloc` → copies + failure paths (Act 7!)
 - thousands of fragments → external fragmentation (Act 6!)
-- shared prefixes impossible — `malloc` doesn't know "shared"
+- shared prefixes impossible: `malloc` doesn't know "shared"
 - error/timeout paths leak: who frees 40 half-built caches?
 
-Better tools exist. Two of them are already in this lecture: **pools** and **arenas**.
+Better tools, already in this lecture: **pools** and **arenas**.
 
 ---
 
 # 🗃️ Act 10: The Fixed-Size KV Pool — One Region
 
-If every KV block is the same size (say 16 KB), **external fragmentation
-vanishes**: any free block serves any request.
-
-And we build the pool itself the way `Block` builds a block —
-one allocation, one region, metadata inside:
+If every KV block is the same size (say 16 KB), **external fragmentation vanishes**: any free block serves any request.
 
 ```c
 typedef struct {
@@ -1143,34 +732,21 @@ typedef struct {
 } KVPool;
 ```
 
-No `char *base`. No separately-malloc'd arrays. Struct + heap in **one `mmap`**.
-
----
-
-# 📏 Act 10: Why the Struct Is Shaped Like This
-
-- The **flexible array member must be last** — C allows exactly one, at the end.
-- Fixed members are ordered largest-alignment first
-  (`size_t`, `size_t`, `uint32_t`) → no padding wasted between them.
-- The pool's address comes from `mmap` → page-aligned already.
-- The free list is an array of **indices**, not a pointer chain —
-  the explicit-free-list idea from Act 4, without fighting alignment.
-
-One allocation, one `munmap`. Cleanup is trivially correct —
-which is the entire philosophy of arenas, applied to the pool itself.
+- Struct + heap in **one `mmap`**, cleaned up by **one `munmap`**. No `char *base`, no separate arrays.
+- The flexible array member must be **last**; members are ordered largest alignment first, so no padding between them.
+- The free list is an array of **indices**, not pointers: Act 4's explicit free list without alignment trouble.
 
 ---
 
 # 🗺️ Act 10: Inside `data[]`
 
-```
-data[]:
-┌──────────────┬──────────────┬─────┬──────────┬──────────┬─────┐
-│ next_free[]  │ refcount[]   │ pad │ block 0  │ block 1  │ ... │
-│ nblocks × 4B │ nblocks × 2B │     │ 16 KB    │ 16 KB    │     │
-└──────────────┴──────────────┴─────┴──────────┴──────────┴─────┘
-                               ↑ rounded so block 0 is 16-byte aligned
-```
+![w:1000](images/w6-pool-layout.svg)
+
+---
+
+# 🧰 Act 10: The Three Layout Helpers
+
+Everything else in the pool falls out of these:
 
 ```c
 static uint32_t *pool_next_free(KVPool *p) { return (uint32_t *)p->data; }
@@ -1183,24 +759,25 @@ static char *pool_blocks(KVPool *p) {
 }
 ```
 
+`offsetof(KVPool, data)` is **20** (8 + 8 + 4), while `sizeof(KVPool)` is **24** (tail padding). Don't mix them up.
+
 ---
 
 # ✏️ Act 10: Paper Exercise — Size the mmap
 
-3 minutes, on paper, in pairs. No code. This is the exact computation the lab
-will demand of you — get it wrong now, in class, where it's free.
-
-`block_size = 16384`, `nblocks = 512`.
+On paper, the exact computation the lab needs. `block_size = 16384`, `nblocks = 512`.
 
 1. How many bytes do the `next_free` and `refcount` arrays occupy together?
-2. `data[]` starts at offset `offsetof(KVPool, data)` = 24 from the pool's
-   base. After the metadata arrays, what must happen before block 0 can start?
+2. `data[]` starts at offset `offsetof(KVPool, data)` = 20. After the metadata arrays, what must happen before block 0 can start?
 3. Write one expression for the total bytes `mmap` must request.
 
-🤔 Compare your expression with your neighbor's. Do you round the offset
-or the absolute address? Why does it matter?
+🤔 Do you round the offset or the absolute address? Why does it matter?
 
-Next slide: the reference implementation — check your arithmetic against it.
+<!-- Pair exercise, ~3 minutes.
+Answers: 512 * 6 = 3072; 20 + 3072 = 3092 -> round up to 3104; total = 3104 + 512 * 16384 = 8,391,712.
+mmap's base is page-aligned, so rounding the offset and rounding the absolute address agree HERE;
+pool_blocks() rounds the absolute address so it stays correct for any base.
+create and destroy must use the same total: munmap(p, total) with a different length can leave a page mapped. -->
 
 ---
 
@@ -1208,8 +785,9 @@ Next slide: the reference implementation — check your arithmetic against it.
 
 ```c
 KVPool *kv_pool_create(size_t block_size, size_t nblocks) {
-    size_t meta = nblocks * (sizeof(uint32_t) + sizeof(uint16_t));
-    size_t total = sizeof(KVPool) + meta + 16 + nblocks * block_size;
+    size_t meta  = nblocks * (sizeof(uint32_t) + sizeof(uint16_t));
+    size_t first = (offsetof(KVPool, data) + meta + 15) & ~(size_t)15;
+    size_t total = first + nblocks * block_size;   /* destroy: same value */
 
     KVPool *p = mmap(NULL, total, PROT_READ | PROT_WRITE,
                      MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -1224,7 +802,10 @@ KVPool *kv_pool_create(size_t block_size, size_t nblocks) {
 }
 ```
 
-One region. The `+16` covers the alignment rounding. Later: one `munmap`.
+One region. `kv_pool_destroy` recomputes the same `total` for its one `munmap`.
+
+<!-- Lab adds: reject nblocks == 0 / block_size == 0, round block_size up to 16.
+destroy: total = (pool_blocks(p) - (char *)p) + nblocks * block_size. -->
 
 ---
 
@@ -1239,7 +820,7 @@ void *kv_block_alloc(KVPool *p) {
     return pool_blocks(p) + (size_t)i * p->block_size;
 }
 
-void kv_block_free(KVPool *p, void *ptr) {
+void kv_block_free(KVPool *p, void *ptr) {           /* validation: next slide */
     uint32_t i = ((char *)ptr - pool_blocks(p)) / p->block_size;
     uint16_t *rc = pool_refcount(p);
     if (rc[i] > 1) { rc[i]--; return; }              /* still shared */
@@ -1253,19 +834,10 @@ No splitting. No coalescing. No searching. Fixed sizes bought us all three.
 
 ---
 
-# 🛡️ Act 10: Defensive Allocators — Predict
+# 🛡️ Act 10: Defensive Allocators — Trust No Pointer
 
-`kv_block_free` receives a raw pointer from the outside world. What if it
-is wrong — a stack pointer, the middle of a block, another pool's block?
-
-Blindly converting it to an index and pushing it onto the free list can
-corrupt the whole pool.
-
-🤔 Which checks would you perform, in what order, before trusting `ptr`?
-
----
-
-# 🛡️ Act 10: The Validation Recipe
+`kv_block_free` gets a raw pointer: a stack address? the middle of a block? another pool's?
+🤔 Which checks, in what order?
 
 ```c
 void kv_block_free(KVPool *p, void *ptr) {
@@ -1284,8 +856,7 @@ void kv_block_free(KVPool *p, void *ptr) {
 }
 ```
 
-Rule of systems programming: **at module boundaries, trust no pointer.**
-Your lab's grader feeds bad pointers on purpose.
+The lab grader feeds bad pointers on purpose.
 
 ---
 
@@ -1293,35 +864,25 @@ Your lab's grader feeds bad pointers on purpose.
 
 Two agents, same system prompt → same KV prefix.
 
-🤔 Allocate it twice?
-
-Think about Act 1 while you answer: what did the kernel do with the
-orchestrator's read-only gigabytes?
+🤔 Allocate it twice? (Recall Act 1: what did the kernel do with the read-only gigabytes?)
 
 ---
 
 # 🤝 Act 10: Refcounts — Share First, Copy on Mutation
 
-No — we share it, and count the sharers:
+![w:900](images/w6-refcount-share.svg)
 
 ```c
-void kv_block_share(KVPool *p, void *ptr) {   /* refcount++ */
+void kv_block_share(KVPool *p, void *ptr) {
     pool_refcount(p)[block_index(p, ptr)]++;
 }
 ```
 
-- Reads share freely — cheap, exactly like Act 1's pages.
-- A request that must **modify** a shared block copies it first, then diverges.
-
-**Share the immutable, copy on mutation.**
-The kernel did it for `fork()`; now we do it for KV blocks.
-Same principle, different layer.
+**Share the immutable, copy on mutation.** (`block_index` is the pointer → index line from `kv_block_free`.)
 
 ---
 
 # 🔁 Act 10: The COW Rhyme — Same Idea, Two Layers
-
-Step back and look at the whole lecture:
 
 |  | Pages (Act 1) | KV blocks (Act 10) |
 | --- | --- | --- |
@@ -1330,12 +891,7 @@ Step back and look at the whole lecture:
 | Cost of sharing | ~zero | ~zero |
 | Cost of the copy | one page, on first write | one block, on first mutation |
 
-Copy-on-write was not a kernel trivia detail. It is a **design pattern**:
-share what is immutable, duplicate lazily on divergence.
-
-The kernel did it for `fork()`; we just did it for KV blocks.
-Same principle, different layer — and you will meet it again wherever
-large shared state meets occasional mutation.
+Copy-on-write is a **design pattern**, not kernel trivia: share what is immutable, duplicate lazily on divergence.
 
 ---
 
@@ -1349,12 +905,8 @@ request ends   →  arena_destroy()             — one free, metadata gone
                   kv_block_free() × N          — blocks return to the pool
 ```
 
-- Metadata leaks are structurally impossible (arena).
-- KV memory never touches `malloc` at all (pool).
-- Timeout/crash cleanup = the same two lines, in a loop.
-
-This is the shape of real serving engines. It is also this week's lab —
-and the first brick of your end-of-semester project.
+Metadata leaks are impossible (arena). KV memory never touches `malloc` (pool). Timeout/crash cleanup is the same two lines in a loop.
+The shape of real serving engines, and this week's lab: the first brick of your final project.
 
 ---
 
@@ -1368,38 +920,30 @@ and the first brick of your end-of-semester project.
 | no sharing | refcounted sharing |
 | cleanup scattered | one `munmap` |
 
-Real engines run **several** pools (multiple size classes — segregated lists,
-Act 6!) and fall back to `mmap` for odd sizes. Nothing here is exotic;
-it is this lecture, applied.
+Real engines run **several** pools (size classes, Act 6) and fall back to `mmap` for odd sizes.
 
 ---
 
 # 🦀 Rust Callout: Shared Blocks, Atomically
-
-Our `refcount` array, as a type:
 
 ```rust
 use std::sync::Arc;
 let prefix: Arc<KVBlock> = Arc::new(compute_prefix());
 let r1 = prefix.clone();   // refcount++ — cheap
 let r2 = prefix.clone();   // refcount++ — cheap
-// when the last Arc drops → memory freed. No kv_block_free to forget.
+// last Arc dropped → memory freed automatically
 ```
 
-`Arc` = **atomic** reference counting = a thread-safe `refcount`.
-Inference engines written in Rust manage shared prefixes exactly this way.
-The C version is what you build in the lab.
+`Arc` = **atomic** reference counting = a thread-safe `refcount`. Rust inference engines share prefixes this way; you build the C version in the lab.
 
 ---
 
 # 🦀 Rust Corner: Allocation With Guardrails
 
-C's discipline, as types:
-
 ```rust
 let p: Box<i32> = Box::new(42);      // malloc + initialize...
-drop(p);                             // ...and free, but automatic at scope end
-// double free? use after free? Neither is expressible in safe Rust.
+drop(p);                             // ...and free, automatic at scope end
+// double free / use after free: not expressible in safe Rust
 
 let mut v: Vec<u8> = Vec::new();
 v.push(1);                           // grows by doubling — realloc underneath
@@ -1411,15 +955,13 @@ v.push(1);                           // grows by doubling — realloc underneath
 | `free(p); /* p still usable */` | `drop` at scope end; no manual call |
 | realloc dance with `tmp` | `Vec`/`String` handle growth internally |
 
-Underneath, Rust calls a global allocator — historically the system's,
-often `jemalloc` in practice. Same heap, different contract.
+Underneath, Rust calls the system's `malloc` by default (jemalloc was the default until Rust 1.32, 2019; it is now an opt-in global allocator). Same heap, different contract.
 
 ---
 
 # 🧪 Lab 6: Build the KV Cache Memory Pool (1-Week Lab)
 
-This week's lab is a take-home mini-project — and **Part 1 of the final
-project's memory subsystem**. Full spec is in `lab6-kv-cache.md`; the API:
+Take-home mini-project and **Part 1 of the final project's memory subsystem**. Full spec: `lab6-kv-cache.md`.
 
 ```c
 KVPool *kv_pool_create(size_t block_size, size_t nblocks);
@@ -1434,8 +976,7 @@ void   arena_reset(Arena *a);
 void   arena_destroy(Arena *a);
 ```
 
-This is the code from Acts 9–10, re-typed by you, tested, benchmarked.
-Everything you need is on these slides — no new ideas, only new keystrokes.
+The code from Acts 9–10, written, tested and benchmarked by you. No new ideas needed.
 
 ---
 
@@ -1446,15 +987,12 @@ Everything you need is on these slides — no new ideas, only new keystrokes.
 - benchmark against libc `malloc` (time + peak RSS) and write it up;
 - bonus: double-free detection, COW-style cloning, `pthread_mutex_t` teaser.
 
-The grader's first commands, worth memorizing:
+The grader's first commands:
 
 ```bash
 grep -n "malloc\|calloc\|realloc\|free(" kvpool.c   # must find nothing
 valgrind --leak-check=full ./test_kvpool            # must be silent
 ```
-
-We wrote `mymalloc` together in class. Thursday you make the same ideas
-serve a real workload.
 
 ---
 
@@ -1481,15 +1019,13 @@ serve a real workload.
 | request metadata leaks everywhere | arena | many allocations, one free |
 | bad pointers from callers | validate before trusting | defensive allocator boundaries |
 
-Next week: **threads** — one address space, many actors, and every rule from
-today's "separate memory" column quietly retired. Bring your mutexes.
+Next week: **threads** — one address space, many actors. Bring your mutexes.
 
 ---
 
 # 📖 Field Manual (Reference Appendix)
 
-Lookup material for labs, homework, and exams. Not narrated in class —
-consult it like a man page.
+Reference for labs, homework, and exams. Not covered in class.
 
 ---
 
@@ -1509,7 +1045,7 @@ int   posix_memalign(void **memptr, size_t align, size_t size);
 
 | Rule | Detail |
 | --- | --- |
-| `malloc` | uninitialized; may return `NULL` |
+| `malloc` | uninitialized; may return `NULL` (always check) |
 | `calloc` | zeroed; checks `nmemb*size` overflow |
 | `realloc(NULL, n)` | same as `malloc(n)` |
 | `realloc(p, 0)` | implementation-defined; avoid |
@@ -1547,8 +1083,7 @@ int   munmap(void *addr, size_t length);   /* really returns memory */
 | `MAP_PRIVATE` | copy-on-write semantics |
 | `PROT_READ/WRITE` | page permissions |
 
-Also the foundation of shared memory IPC (`MAP_SHARED`, Week 12) and
-memory-mapped files.
+Also the basis of shared-memory IPC (`MAP_SHARED`, Week 12) and memory-mapped files.
 
 ---
 
@@ -1572,15 +1107,15 @@ Allocator consequences:
 
 # 📎 FM 5: Placement Strategy Cheat Sheet
 
-| Strategy | Search | Fragmentation profile |
-| --- | --- | --- |
-| First fit | from start | front-loaded fragmentation |
-| Next fit | resume position | spread fragmentation |
-| Best fit | full scan / heap | dust of tiny holes |
-| Worst fit | full scan / max-heap | large survivors, rarely best |
+| Strategy | Rule | Search | Fragmentation profile |
+| --- | --- | --- | --- |
+| First fit | first hole big enough | O(n) from start | front-loaded fragmentation |
+| Next fit | like first fit, resume where the last search ended | O(1)* | spread fragmentation |
+| Best fit | smallest hole that fits | O(n)** | dust of tiny holes |
+| Worst fit | largest hole available | O(n)** | large survivors, rarely best |
 
-All O(n) scans can be improved with size-indexed structures
-(min/max heaps, segregated lists). Optimal offline allocation = knapsack = NP-hard.
+\* amortized by remembering position. ** improvable with a min/max heap or size-indexed lists.
+Optimal offline allocation = knapsack = NP-hard.
 
 ---
 
@@ -1608,7 +1143,7 @@ All O(n) scans can be improved with size-indexed structures
 | glibc checks | `MALLOC_CHECK_=3 ./prog` | some heap corruption, loudly |
 | GDB | `break malloc` / `watch *p` | allocation flow inspection |
 
-Compile with `-g` always when debugging. No symbols, no line numbers, no mercy.
+Always compile with `-g` when debugging.
 
 ---
 
@@ -1622,7 +1157,7 @@ Compile with `-g` always when debugging. No symbols, no line numbers, no mercy.
 | `malloc_trim(0)` | explicitly ask for memory return |
 
 Environment equivalents: `MALLOC_MMAP_THRESHOLD_`, `MALLOC_ARENA_MAX`, etc.
-You will rarely need these — but server memory mysteries often end here.
+Rarely needed, but server memory mysteries often end here.
 
 ---
 
@@ -1641,8 +1176,7 @@ setrlimit(RLIMIT_AS, &rl);      /* address space cap — set before exec */
 | `RLIMIT_STACK` | stack size |
 
 Shell side: `ulimit -v 262144` (KiB). Container side: cgroups v2 `memory.max`.
-The OOM killer scores processes (`/proc/<pid>/oom_score_adj`) when the
-machine runs dry — supervision includes expecting that call.
+When memory runs out, the OOM killer picks by score (tune via `/proc/<pid>/oom_score_adj`).
 
 ---
 
@@ -1676,14 +1210,13 @@ typedef struct {
 
 | Quantity | Formula |
 | --- | --- |
+| `offsetof(KVPool, data)` | 20 on x86-64 (`sizeof(KVPool)` is 24: don't confuse them) |
 | free list offset | `p->data` |
 | refcount offset | `p->data + nblocks * sizeof(uint32_t)` |
 | first block | align up to 16: `(addr + 15) & ~15` (absolute address!) |
 | block `i` | `pool_blocks(p) + i * block_size` |
 | index from pointer | `(ptr - pool_blocks(p)) / block_size` |
-| total for `munmap` | `(pool_blocks(p) - (char *)p) + nblocks * block_size` |
+| total for `mmap` / `munmap` | `(pool_blocks(p) - (char *)p) + nblocks * block_size` |
 
-Rules: flexible array member last; one `mmap`/one `munmap`; `UINT32_MAX` = end
+Rules: flexible array member last; one `mmap`/one `munmap` with the **same** length; `UINT32_MAX` = end
 of free list; refcount `> 1` means "free just decrements" (COW sharing).
-
-Field Manual ends. Remember: stories teach, manuals remind.
