@@ -216,7 +216,7 @@ Answer briefly (2–5 sentences each):
 | Bonus | Description |
 | --- | --- |
 | **B1** | Double-free detection: freeing an already-free block prints a warning and does nothing. (How do you know it's free? Refcount is 0 — but be careful about race-free reasoning.) |
-| **B2** | COW helper `void *kv_block_clone(KVPool *, void *ptr)`: if `refcount > 1`, allocate a fresh block, `memcpy`, decrement the old refcount, return the copy; otherwise return the same pointer. Test the diverging-prefix scenario. |
+| **B2** | COW helper `void *kv_block_clone(KVPool *, void *ptr)`: if `refcount > 1`, allocate a fresh block, `memcpy`, decrement the old refcount, return the copy; otherwise return the same pointer. Test the diverging-prefix scenario. Note that the pool cannot detect writes: sharing is a contract, and a writer must call this helper *before* modifying a shared block. |
 | **B3** | Thread-safety teaser: wrap alloc/free/share with a single `pthread_mutex_t` and stress-test with 4 threads. (We cover mutexes properly in Week 9.) |
 
 ---

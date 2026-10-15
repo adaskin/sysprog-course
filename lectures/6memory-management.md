@@ -864,7 +864,7 @@ The lab grader feeds bad pointers on purpose.
 
 Two agents, same system prompt → same KV prefix.
 
-🤔 Allocate it twice? (Recall Act 1: what did the kernel do with the read-only gigabytes?)
+🤔 Allocate it twice? (Recall Act 1: what did the kernel do with the gigabytes nobody had written to?)
 
 ---
 
@@ -880,6 +880,43 @@ void kv_block_share(KVPool *p, void *ptr) {
 
 **Share the immutable, copy on mutation.** (`block_index` is the pointer → index line from `kv_block_free`.)
 
+🤔 But who decides that a block is being *mutated*? Who stops the write?
+
+---
+
+# 🚧 Act 10: The Catch — the Pool Cannot See Writes
+
+`refcount > 1` means "shared", but the pool only hands out **addresses**.
+After that, `p[i] = x` is just a store: the pool cannot tell a read from a write.
+
+So "read-only" is a **contract**, not a mechanism:
+
+- A request that wants to **write** must first call the clone helper (lab bonus B2):
+  `p = kv_block_clone(pool, p);` returns the same pointer if `rc == 1`, a private copy if shared.
+- Write through a shared pointer **without** cloning, and every other sharer is silently corrupted.
+
+---
+
+|  | Kernel COW (Act 1) | Our KV pool |
+| --- | --- | --- |
+| Read-only enforced by | MMU write-protect, page fault | nobody: API discipline |
+| Knows a write happened | yes, the fault | no |
+| Cost of forgetting | none, the kernel copies | silent corruption of other requests |
+
+---
+
+# 🛡️ Act 10: Making the Contract Hard to Break
+
+1. **Immutable by construction.** Shared prefix blocks are full and finalized. Only a sequence's last, partial block is ever written, and it is private (`rc == 1`). Real engines copy just that block when a sequence forks.
+2. **Types as a guard.** Hand readers a `const` pointer; writers get a pointer only from the clone helper.
+
+```c
+const char *kv_block_read(KVPool *p, void *blk);     /* readers: no writes     */
+char       *kv_block_write(KVPool *p, void **blk);   /* clones first if shared */
+```
+
+3. **Hardware, for debugging.** `mprotect(PROT_READ)` on a block while `rc > 1`: a stray write becomes `SIGSEGV`. Needs page-aligned blocks (ours are only 16-byte aligned). Full COW through a signal handler is possible, but that is reimplementing the kernel.
+
 ---
 
 # 🔁 Act 10: The COW Rhyme — Same Idea, Two Layers
@@ -890,8 +927,9 @@ void kv_block_share(KVPool *p, void *ptr) {
 | Mechanism | page table + fault | refcount + clone |
 | Cost of sharing | ~zero | ~zero |
 | Cost of the copy | one page, on first write | one block, on first mutation |
+| Who enforces it | hardware (MMU) | the programmer, via the API |
 
-Copy-on-write is a **design pattern**, not kernel trivia: share what is immutable, duplicate lazily on divergence.
+Copy-on-write is a **design pattern**, not kernel trivia: share what is immutable, duplicate lazily on divergence. Only the kernel gets enforcement for free.
 
 ---
 
@@ -932,9 +970,12 @@ let prefix: Arc<KVBlock> = Arc::new(compute_prefix());
 let r1 = prefix.clone();   // refcount++ — cheap
 let r2 = prefix.clone();   // refcount++ — cheap
 // last Arc dropped → memory freed automatically
+
+let mut mine = prefix.clone();
+Arc::make_mut(&mut mine).push_token(7);   // clones first if anyone else shares it
 ```
 
-`Arc` = **atomic** reference counting = a thread-safe `refcount`. Rust inference engines share prefixes this way; you build the C version in the lab.
+`Arc` = **atomic** reference counting = a thread-safe `refcount`. It hands out only `&T`, so the compiler enforces read-only; `Arc::make_mut` is clone-on-write. In C that discipline is yours.
 
 ---
 
