@@ -1,5 +1,5 @@
 ---
-title: "Memory Management: Copy-on-Write, the Heap, and Building an Allocator"
+title: "Memory Management: Copy-on-Write, the Heap, and the KV Cache"
 author: "Ammar Daskin"
 marp: true
 paginate: true
@@ -8,29 +8,26 @@ theme: default
 class: invert
 ---
 
-<style type="text/css">
-div {
-font-size: clamp(10px, 2vw, 28px);
-text-align: left;
-}
-img {
-display: block;
-width: 70%;
-text-align: center;
-}
-</style>
-
 # Memory Management
-## Copy-on-Write, the Heap, and Building an Allocator
-### Week 6
+## Copy-on-Write, the Heap, Building an Allocator, and the KV Cache
 
-Last week we built the orchestrator out of `fork`, `exec`, `wait`, `dup2`, `pipe`.
-Two black boxes stayed sealed, each with a note taped on it: "open in Week 5."
+---
 
-1. **What exactly did `fork()` copy?** The worker looked like a perfect copy of the orchestrator — but surely it did not duplicate gigabytes instantly?
+The last two weeks we built the orchestrator: `fork`, `exec`, `wait` and
+redirection in Week 4, then `dup2` and `pipe` in Week 5.
+
+---
+
+**Today**:
+
+1. **What exactly did `fork()` copy?** 
+   - The worker looked like a perfect copy of the orchestrator — but surely it did not duplicate gigabytes instantly?
+
+
 2. **What does `malloc()` really do?** And `free()` returns memory... *to whom?*
-
-Today we open both boxes. Then we build our own `malloc` — and meet every way it can fail.
+    - Today we build our own allocator ideas 
+   - and finish with the memory workload your projects will actually meet: 
+     - the **KV cache**.
 
 ---
 
@@ -42,16 +39,15 @@ Your orchestrator has loaded:
 - a 500 MB embedding index,
 - a 300 MB log cache.
 
-Now it calls `fork()` eight times to launch eight worker agents.
+Assume it calls 8 x `fork()`  to launch 8 worker agents.
 
-🤔 How much memory does the machine need?
-2.8 GB + 8 × 2.8 GB ≈ **25 GB**?
+- 🤔 The memory machine needs: 2.8 GB + 8 × 2.8 GB ≈ **25 GB**?
 
 The machine is fine. Even `top` barely moves. Why?
 
 ---
 
-# 🧠 The Answer Is a Lazy Lie
+# 🧠 The Answer is **copy-on-write (COW)**
 
 `fork()` does not copy your memory. It *promises* to copy your memory.
 
@@ -59,17 +55,11 @@ The machine is fine. Even `top` barely moves. Why?
 - The bytes are only duplicated when somebody **writes**.
 - Until then, all 2.8 GB are shared, read-only, between nine processes.
 
-This is **copy-on-write** (COW), and it is the reason `fork()` + `exec()`
-is cheap enough to be the backbone of every shell, every CI system,
-and every agent orchestrator on Unix.
-
-Let's prove it exists — by breaking our assumptions about it.
+> it is the reason `fork()` + `exec()` is cheap enough to be the backbone of every shell, every CI system, and every agent orchestrator on Unix.
 
 ---
 
-# 🎭 Act 1: What Does `fork()` Actually Copy?
-
-A prediction exercise. Run this in your head first:
+# 🎭 Act 1: Let's prove what `fork()` Actually Copies
 
 ```c
 #include <stdio.h>
@@ -90,7 +80,7 @@ int main(void) {
 }
 ```
 
-🤔 What does the parent see for `x`? And look closely at the addresses...
+🤔 What does the parent see for `x`? And look closely at the addresses too...
 
 ---
 
@@ -103,7 +93,12 @@ parent: x = 10 at 0x7ffd3c2a1b4c
 
 🤯 The **same virtual address** holds **two different values** — one per process.
 
-This is the core mental model of the week:
+Before the explanation: can you state, in one sentence, what the kernel
+must be doing behind this trick?
+
+---
+
+# 🧠 Act 1: The Mental Model of the Week
 
 | Layer | Shared after fork? |
 | --- | --- |
@@ -112,7 +107,7 @@ This is the core mental model of the week:
 | What each process sees | its own private copy |
 
 The child's `x = 42` triggered a page copy — of just the 4 KB page containing `x`.
-Everything else stayed shared. The write is the bill collector.
+Everything else stayed shared. **The write is the bill collector.**
 
 ---
 
@@ -128,11 +123,18 @@ Both processes run this after the fork. Both call `malloc(100)` independently.
 
 🤔 Do they get the same address or different addresses?
 
-Answer: **the same address** — their heaps are identical copies with identical
-allocator state, so both hand out the same virtual pointer. But the bytes behind
-that pointer are now two separate physical pages.
 
-Virtual memory: same map, different territory.
+---
+
+# 🔍 Act 1: The Answer — Same Map, Different Territory
+
+ **the same virtual address** — their heaps are identical copies with identical allocator state, so both hand out the same virtual pointer. 
+ > But the bytes behind that pointer are now two separate physical pages.
+
+**Virtual memory: same map, different territory.**
+
+(Notice what just sneaked in: the allocator's own bookkeeping — free lists,
+headers, the break — was copied by `fork()` too. Allocator state is just memory.)
 
 ---
 
@@ -160,6 +162,14 @@ int main(void) {
 The stdio buffer lives **in process memory** (user space, in the `FILE`'s buffer).
 `fork()` copied it — buffer and all — into the child.
 Both processes then ran `exit()`, and both flushed *their* copy.
+
+Two copies in, two copies out.
+
+🤔 Which of our Week 4 habits does this explain?
+
+---
+
+# 📚 Act 1: The Rules the Buffer Taught Us
 
 That is why:
 
@@ -212,7 +222,20 @@ The heap at the system level is a contiguous range of addresses that the program
 can expand or contract. The border it expands is the **program break**.
 
 🤔 Quick check from Week 2: where do `local`, `*p`, and `"literal"` live?
-(stack / heap / read-only data.)
+
+---
+
+# 🗺️ Act 2: Quick Check — the Answers
+
+| Item | Lives in |
+| --- | --- |
+| `local` | stack |
+| the pointer variable `p` itself | stack |
+| the memory `*p` points to | heap |
+| `"literal"` | read-only data (`.rodata`) |
+
+One pointer, two regions: the variable on the stack, the bytes it points to
+on the heap. (The full "where things live" table is Field Manual FM 10.)
 
 ---
 
@@ -260,6 +283,21 @@ void free(void *p) {
 ```
 
 It even works! So why does libc ship a 10,000-line allocator instead?
+
+---
+
+# ⏸️ Act 3: Pause — It Works. So Why Is It Terrible?
+
+60–90 seconds. In pairs: this allocator works. Name as many problems with it
+as you can — be specific about what breaks, and when.
+
+🤔 Your candidates, before you turn the page:
+
+- ⁉️
+- ⁉️
+- ⁉️
+
+Next slide: the bill arrives. Check how many you predicted.
 
 ---
 
@@ -384,7 +422,7 @@ its report buffer. Tear down the children, then the Task, then the table slot.
 
 ---
 
-# 🧱 Act 4: Inside `malloc` — Blocks and Headers
+# 🧱 Act 4: Inside `malloc` — The Heap Is a List of Blocks
 
 The heap is not a shapeless blob. It is a **list of blocks**, each wearing a header:
 
@@ -395,7 +433,17 @@ The heap is not a shapeless blob. It is a **list of blocks**, each wearing a hea
    ↑ size + flags       ↑ what malloc returns (16-byte aligned)
 ```
 
-A minimal header:
+🤔 Notice something: `malloc` returns a pointer to the payload — the bytes
+you asked for. But then... where does it store the block's size? Somebody has
+to remember how big each block is, or `free` could never find anything.
+
+Think for ten seconds before the next slide.
+
+---
+
+# 🧱 Act 4: Inside `malloc` — The Header Struct
+
+The size lives in a **header**, placed just before the payload:
 
 ```c
 typedef struct {
@@ -406,6 +454,9 @@ typedef struct {
 
 Why can flags hide in the low bits of `size`?
 Because blocks are **aligned to 16-byte multiples**, so the low bits are always 0.
+
+This is exactly the shape of the `Tag` + `Block` structs we wrote in class
+for `mymalloc` — keep that code open, it comes back in Act 10.
 
 ---
 
@@ -444,6 +495,13 @@ malloc(24):
 after:   [ header | 24 bytes alloc ][ header | 976 bytes free .. ]
 ```
 
+🤔 What should `malloc` do with the leftover ~1000 bytes? Burning the whole
+block would waste 97% of it; there must be a better move.
+
+---
+
+# ✂️ Act 4: Splitting — the Code
+
 ```c
 static void split(block *b, size_t size) {
     if (SIZE(b) < size + MIN_BLOCK) return;        /* remainder too small */
@@ -471,8 +529,28 @@ after free(b):   [ A alloc ][ b free  ][ C free ]   ← two holes...
 coalesce:        [ A alloc ][ b + C merged free ]   ← ...one bigger hole
 ```
 
+Merging matters because big holes serve big requests: two 8 KB splinters
+side by side can satisfy a 12 KB request that neither could alone.
+
 How do we find the **next** block? Walk forward by size. Easy.
 How do we find the **previous** block? Walk *backward*... by what?
+
+---
+
+# ❓ Act 4: Pause — Finding the Previous Block
+
+This is the puzzle the classic allocators had to solve. Take thirty seconds.
+
+We know how to step forward: header at `b`, payload of `SIZE(b)` bytes,
+next header right after.
+
+But at `free(b)`, to merge backward we need the block *before* `b` —
+its start address and its size. From `b` alone... how?
+
+🤔 Hint: everything you need is allowed to live inside the heap itself —
+in the blocks. What could you duplicate, and where?
+
+Next slide: the classic answer — beautifully simple, easy to get wrong.
 
 ---
 
@@ -500,6 +578,21 @@ On `free(b)`:
 
 O(1) in both directions. That is what "pointer arithmetic and coalescing"
 in the allocator-challenges list actually means.
+
+---
+
+# 🕵️ Act 4: Pause — Our Search Walks Allocated Blocks, Too
+
+Look back at `find_fit` (two slides ago). To find one free block,
+we step over *every* block — allocated ones included.
+
+🤔 As the heap fills up, most blocks are allocated. So our "find a free block"
+search is mostly... walking over blocks we already know we can't use.
+
+How would you skip them? Where would you keep the list of only the free ones —
+and what memory would it cost?
+
+Thirty seconds, then the classic trick.
 
 ---
 
@@ -560,7 +653,23 @@ Every real allocator is a bundle of heuristics tuned for a *workload*:
 
 ---
 
-# 🕳️ Act 6: Fragmentation — the Allocator's Two Diseases
+# 🕳️ Act 6: Fragmentation — Predict the Wastes
+
+Two wastes are possible in any allocator. Before naming them, spot them yourself.
+
+**Case 1.** The allocator only hands out blocks in multiples of 16 KB.
+Your program calls `malloc(2048)`.
+
+```
+[ allocated 16KB block ─── real use: 2KB ─── ? ]
+```
+
+🤔 What, exactly, is being wasted here? Whose fault is it — the program's or
+the allocator's?
+
+---
+
+# 🕳️ Act 6: Internal Fragmentation
 
 **Internal fragmentation** — the block is bigger than the request:
 
@@ -568,6 +677,32 @@ Every real allocator is a bundle of heuristics tuned for a *workload*:
 malloc(2KB) on a system handing out 16KB blocks:
 [ allocated 16KB ─── real use 2KB ─── 14KB wasted inside ]
 ```
+
+The 14 KB is inside an allocated block — marked used, unreachable to anyone.
+It is not a bug; it is the price of fixed block sizes and alignment.
+
+(Keep this picture — it comes back when we judge the KV pool at the end.)
+
+Now the second case.
+
+---
+
+# 🕳️ Act 6: External Fragmentation — Predict
+
+**Case 2.** The heap contains, in address order:
+
+```
+[ free 8KB ][ used 4KB ][ free 8KB ]
+```
+
+Your program calls `malloc(12KB)`.
+
+🤔 There are 16 KB of free memory in total. Does the request succeed?
+If not — why not, in one sentence?
+
+---
+
+# 🕳️ Act 6: External Fragmentation — and the 50% Rule
 
 **External fragmentation** — enough free memory exists, but scattered:
 
@@ -579,6 +714,11 @@ malloc(2KB) on a system handing out 16KB blocks:
 The "50% rule" intuition: first-fit leaves, on average, half-sized
 splinters after each split. Splinters multiply. Eventually
 `malloc` fails while `top` says memory is available. Users file bugs.
+
+| Disease | Waste lives... |
+| --- | --- |
+| Internal fragmentation | *inside* allocated blocks (block > request) |
+| External fragmentation | in *scattered free holes* that no request fits |
 
 ---
 
@@ -596,10 +736,17 @@ while (running) {
 
 RSS (resident memory) climbs slowly forever. No leak — every `malloc` is freed.
 
-🤔 What is happening, and which disease is it?
+🤔 What is happening? Name the disease before the next slide.
 
-External fragmentation: the free list is full of holes that don't fit
+---
+
+# 🧠 Act 6: The Diagnosis
+
+**External fragmentation**: the free list is full of holes that don't fit
 incoming sizes. The allocator keeps growing the heap instead of reusing.
+
+RSS climbs without a single leaked byte.
+
 This is why long-lived servers care deeply about allocator design —
 and why you sometimes see a periodic "restart to reclaim memory" ritual.
 
@@ -660,6 +807,8 @@ Outcome 3 is where the famous bug lives. Next slide.
 
 # 💣 Act 7: The One-Line Memory Leak
 
+Read this program. It looks fine. It is not.
+
 ```c
 int *array = malloc(2 * sizeof(int));
 array[0] = 10; array[1] = 20;
@@ -668,8 +817,27 @@ array = realloc(array, 3 * sizeof(int));   /* 🤔 what if this returns NULL? */
 array[2] = 30;                             /* segfault — and the old block is orphaned */
 ```
 
-If `realloc` fails, it returned `NULL` — and we just overwrote our only
-pointer to the original block. Classic leak + crash combo.
+🤔 Trace the failure path out loud: what does `realloc` return when the heap
+is exhausted, and what has just happened to our only pointer to the
+original block?
+
+---
+
+# 💣 Act 7: Pause — What Just Broke?
+
+Two independent disasters in two lines:
+
+1. If `realloc` failed, it returned `NULL` — so `array = NULL`, and
+   `array[2] = 30` writes to address 0. **Crash.**
+2. Worse: assigning to `array` **overwrote our only pointer** to the
+   original 2-int block. It is still allocated, still ours — and now
+   unreachable. Even if we survive the crash, we can never `free` it. **Leak.**
+
+Classic leak + crash combo, from one missing variable.
+
+---
+
+# 📐 Act 7: The Fix — Stage Through a Temporary
 
 The fix — always stage through a temporary:
 
@@ -745,11 +913,22 @@ $ valgrind --leak-check=full ./a.out
 ==3131==    at 0x1091A2: main (buggy.c:4)
 ==3131==  Address 0x4a5a048 is 0 bytes after a block of size 40 alloc'd
 ==3131== Invalid write of size 4            ← use after free
-==3131== 40 bytes in 1 blocks are definitely lost   ← if we'd skipped free()
+==3131==  40 bytes in 1 blocks are definitely lost   ← if we'd skipped free()
 ```
 
 Compile with `-g` so the report names your source lines.
 Cheap alternative for speed: `gcc -fsanitize=address` (ASan).
+
+---
+
+# ⏸️ Act 9: Pause — An Agent Leaks. Now What?
+
+Your orchestrator supervises eight workers. One of them leaks — its RSS
+climbs and climbs, and it is *your* machine it is climbing on.
+
+🤔 From everything you know so far (Week 4's fork/exec gap, today's
+`setrlimit`...), what can the orchestrator do — preferably *before* the leak
+ever starts? Thirty seconds, in pairs.
 
 ---
 
@@ -777,6 +956,27 @@ OOM killer picks a victim by score. Guess whose agent framework it often picks.
 
 ---
 
+# 🏟️ Act 9: Pause — The Request Allocation Pattern
+
+Look at how a single agent task actually uses memory:
+
+- it allocates many small objects while working,
+- they are all needed only until the task ends,
+- then none of them are needed. Ever again.
+
+```c
+char *prompt   = ...;   /* task starts  */
+char *tokens   = ...;
+char *scratch  = ...;
+/* ... 40 more small allocations ... */
+/* task ends: none of these are needed anymore */
+```
+
+🤔 Given that pattern... how many `free()` calls should a whole task need?
+What would the allocation function look like if you exploited this?
+
+---
+
 # 🏟️ Act 9: Arena Allocators — the Agent Pattern
 
 Agents do short-lived, batch-style work: allocate many objects during a task,
@@ -796,9 +996,399 @@ void *arena_alloc(Arena *a, size_t n) {
 
 Task ends → `free(a->buf)`. **One free.** Leaks are structurally impossible.
 
-This is the "tensor arena / memory pool" pattern from the course plan —
-used by inference engines (KV caches!), game engines, request servers.
-It is also the soul of this week's lab.
+This is the "tensor arena / memory pool" pattern — used by inference engines
+(KV caches!), game engines, request servers. It is the soul of this week's lab,
+and Act 10 shows you the workload that makes it necessary.
+
+---
+
+# 🤖 Act 10: The Ultimate Agent Workload — the KV Cache
+
+In transformer-based inference, every active request keeps intermediate state
+for the tokens processed so far — the **KV cache**.
+
+We do **not** care how it is computed. This is a systems course, not an ML one.
+Systems view only:
+
+- a **large** memory region (often gigabytes),
+- that **grows** as the sequence grows,
+- is made of many **blocks**,
+- may be **shared** between requests,
+- and must be **freed** when the request ends.
+
+That is not machine learning. That is *this lecture*: allocation, reuse,
+sharing, fragmentation, cleanup.
+
+---
+
+# 🧮 Act 10: How Big Is "Big"?
+
+```
+KV bytes ≈ 2 × layers × kv_heads × head_dim × seq_len × dtype × batch
+```
+
+Rough 7B-class numbers:
+
+```
+layers = 32     kv_heads = 32     head_dim = 128
+seq_len = 4096  dtype = 2 bytes   batch = 1
+
+2 × 32 × 32 × 128 × 4096 × 2 ≈ 2 GiB  — per single request
+```
+
+Batch of 8 → **≈ 16 GiB**. One machine, a handful of concurrent agents.
+
+🤔 Take 60 seconds and redo the plug-in yourself — then vary one knob
+(e.g. batch = 32) and feel the number run away from you.
+
+Even when the exact numbers change with every new model, the systems lesson
+doesn't: memory like this cannot be managed casually.
+
+---
+
+# 🧱 Act 10: KV Blocks Are Allocator Blocks
+
+Real serving engines manage KV memory in **fixed-size blocks**:
+
+```c
+typedef struct {
+    uint32_t request_id, layer_id;
+    uint32_t token_start, token_count;
+    uint16_t refcount, flags;
+    size_t   size;              /* payload bytes */
+} KVHeader;
+
+typedef struct {
+    KVHeader hdr;
+    char     data[];            /* flexible array member — Week 2! */
+} KVBlock;
+```
+
+🤔 Week 2 quiz: where is the padding in `KVHeader`?
+
+---
+
+# 🧱 Act 10: The Padding — and the Costume
+
+Between `flags` and `size`: `size_t` wants 8-byte alignment, but `flags`
+ends at offset 20 — so the compiler inserts **4 bytes of padding**,
+and `KVHeader` is 32 bytes, not 28.
+
+Same lesson as Week 2's struct packing: if two programs disagree about this
+layout, one of them is reading garbage.
+
+And the bigger picture: this is the `Tag` + `Block` pair from our in-class
+`mymalloc` code, wearing an inference costume.
+
+---
+
+# 🕵️ Act 10: Same Pointer Arithmetic, New Costume
+
+```c
+/* recover the header from a payload pointer */
+KVBlock *b = (KVBlock *)((char *)payload - offsetof(KVBlock, data));
+
+/* step to the next block */
+KVBlock *next = (KVBlock *)((char *)b + offsetof(KVBlock, data) + b->hdr.size);
+```
+
+Contrast the dangerous style: `(KVBlock *)payload - 1` — works today,
+breaks silently the day someone adds a field to the header. `offsetof` doesn't.
+
+`mymalloc`'s `next_block()` did exactly this walk.
+The names changed; the arithmetic didn't.
+
+---
+
+# ❓ Act 10: So... Just `malloc` It?
+
+The naive design:
+
+```c
+char *kv = malloc(huge_size);
+/* sequence grows... */
+kv = realloc(kv, bigger);
+```
+
+🤔 Vote: what breaks **first** in a long-running server with many concurrent
+requests? Name your candidate before the next slide.
+
+---
+
+# ❓ Act 10: What Breaks First — the Answers
+
+- size changes → repeated `realloc` → copies + failure paths (Act 7!)
+- thousands of fragments → external fragmentation (Act 6!)
+- shared prefixes impossible — `malloc` doesn't know "shared"
+- error/timeout paths leak: who frees 40 half-built caches?
+
+Better tools exist. Two of them are already in this lecture: **pools** and **arenas**.
+
+---
+
+# 🗃️ Act 10: The Fixed-Size KV Pool — One Region
+
+If every KV block is the same size (say 16 KB), **external fragmentation
+vanishes**: any free block serves any request.
+
+And we build the pool itself the way `Block` builds a block —
+one allocation, one region, metadata inside:
+
+```c
+typedef struct {
+    size_t   block_size;   /* payload bytes per block (e.g. 16384) */
+    size_t   nblocks;
+    uint32_t free_head;    /* first free block; UINT32_MAX = none  */
+    char     data[];       /* everything lives here                */
+} KVPool;
+```
+
+No `char *base`. No separately-malloc'd arrays. Struct + heap in **one `mmap`**.
+
+---
+
+# 📏 Act 10: Why the Struct Is Shaped Like This
+
+- The **flexible array member must be last** — C allows exactly one, at the end.
+- Fixed members are ordered largest-alignment first
+  (`size_t`, `size_t`, `uint32_t`) → no padding wasted between them.
+- The pool's address comes from `mmap` → page-aligned already.
+- The free list is an array of **indices**, not a pointer chain —
+  the explicit-free-list idea from Act 4, without fighting alignment.
+
+One allocation, one `munmap`. Cleanup is trivially correct —
+which is the entire philosophy of arenas, applied to the pool itself.
+
+---
+
+# 🗺️ Act 10: Inside `data[]`
+
+```
+data[]:
+┌──────────────┬──────────────┬─────┬──────────┬──────────┬─────┐
+│ next_free[]  │ refcount[]   │ pad │ block 0  │ block 1  │ ... │
+│ nblocks × 4B │ nblocks × 2B │     │ 16 KB    │ 16 KB    │     │
+└──────────────┴──────────────┴─────┴──────────┴──────────┴─────┘
+                               ↑ rounded so block 0 is 16-byte aligned
+```
+
+```c
+static uint32_t *pool_next_free(KVPool *p) { return (uint32_t *)p->data; }
+static uint16_t *pool_refcount(KVPool *p) {
+    return (uint16_t *)(p->data + p->nblocks * sizeof(uint32_t));
+}
+static char *pool_blocks(KVPool *p) {
+    char *m = p->data + p->nblocks * (sizeof(uint32_t) + sizeof(uint16_t));
+    return (char *)(((uintptr_t)m + 15) & ~(uintptr_t)15);  /* absolute! */
+}
+```
+
+---
+
+# ✏️ Act 10: Paper Exercise — Size the mmap
+
+3 minutes, on paper, in pairs. No code. This is the exact computation the lab
+will demand of you — get it wrong now, in class, where it's free.
+
+`block_size = 16384`, `nblocks = 512`.
+
+1. How many bytes do the `next_free` and `refcount` arrays occupy together?
+2. `data[]` starts at offset `offsetof(KVPool, data)` = 24 from the pool's
+   base. After the metadata arrays, what must happen before block 0 can start?
+3. Write one expression for the total bytes `mmap` must request.
+
+🤔 Compare your expression with your neighbor's. Do you round the offset
+or the absolute address? Why does it matter?
+
+Next slide: the reference implementation — check your arithmetic against it.
+
+---
+
+# ⚙️ Act 10: Building the Pool
+
+```c
+KVPool *kv_pool_create(size_t block_size, size_t nblocks) {
+    size_t meta = nblocks * (sizeof(uint32_t) + sizeof(uint16_t));
+    size_t total = sizeof(KVPool) + meta + 16 + nblocks * block_size;
+
+    KVPool *p = mmap(NULL, total, PROT_READ | PROT_WRITE,
+                     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (p == MAP_FAILED) return NULL;
+    p->block_size = block_size;  p->nblocks = nblocks;  p->free_head = 0;
+
+    uint32_t *nf = pool_next_free(p);
+    for (size_t i = 0; i + 1 < nblocks; i++) nf[i] = i + 1;  /* 0→1→2→… */
+    nf[nblocks - 1] = UINT32_MAX;                            /* …→END   */
+    memset(pool_refcount(p), 0, nblocks * sizeof(uint16_t));
+    return p;
+}
+```
+
+One region. The `+16` covers the alignment rounding. Later: one `munmap`.
+
+---
+
+# ⚡ Act 10: O(1) Alloc and Free
+
+```c
+void *kv_block_alloc(KVPool *p) {
+    if (p->free_head == UINT32_MAX) return NULL;     /* pool exhausted */
+    uint32_t i = p->free_head;
+    p->free_head = pool_next_free(p)[i];             /* pop */
+    pool_refcount(p)[i] = 1;
+    return pool_blocks(p) + (size_t)i * p->block_size;
+}
+
+void kv_block_free(KVPool *p, void *ptr) {
+    uint32_t i = ((char *)ptr - pool_blocks(p)) / p->block_size;
+    uint16_t *rc = pool_refcount(p);
+    if (rc[i] > 1) { rc[i]--; return; }              /* still shared */
+    rc[i] = 0;
+    pool_next_free(p)[i] = p->free_head;             /* push */
+    p->free_head = i;
+}
+```
+
+No splitting. No coalescing. No searching. Fixed sizes bought us all three.
+
+---
+
+# 🛡️ Act 10: Defensive Allocators — Predict
+
+`kv_block_free` receives a raw pointer from the outside world. What if it
+is wrong — a stack pointer, the middle of a block, another pool's block?
+
+Blindly converting it to an index and pushing it onto the free list can
+corrupt the whole pool.
+
+🤔 Which checks would you perform, in what order, before trusting `ptr`?
+
+---
+
+# 🛡️ Act 10: The Validation Recipe
+
+```c
+void kv_block_free(KVPool *p, void *ptr) {
+    char *base = pool_blocks(p);
+    char *end  = base + p->nblocks * p->block_size;
+    /* 1. inside the block region at all?          */
+    if ((char *)ptr < base || (char *)ptr >= end) {
+        fprintf(stderr, "kv_block_free: pointer outside pool\n"); return;
+    }
+    /* 2. exactly on a block boundary?             */
+    if (((char *)ptr - base) % p->block_size != 0) {
+        fprintf(stderr, "kv_block_free: misaligned pointer\n"); return;
+    }
+    /* 3. only now compute the index and proceed   */
+    ...
+}
+```
+
+Rule of systems programming: **at module boundaries, trust no pointer.**
+Your lab's grader feeds bad pointers on purpose.
+
+---
+
+# 🤝 Act 10: Shared Prefixes — Predict
+
+Two agents, same system prompt → same KV prefix.
+
+🤔 Allocate it twice?
+
+Think about Act 1 while you answer: what did the kernel do with the
+orchestrator's read-only gigabytes?
+
+---
+
+# 🤝 Act 10: Refcounts — Share First, Copy on Mutation
+
+No — we share it, and count the sharers:
+
+```c
+void kv_block_share(KVPool *p, void *ptr) {   /* refcount++ */
+    pool_refcount(p)[block_index(p, ptr)]++;
+}
+```
+
+- Reads share freely — cheap, exactly like Act 1's pages.
+- A request that must **modify** a shared block copies it first, then diverges.
+
+**Share the immutable, copy on mutation.**
+The kernel did it for `fork()`; now we do it for KV blocks.
+Same principle, different layer.
+
+---
+
+# 🔁 Act 10: The COW Rhyme — Same Idea, Two Layers
+
+Step back and look at the whole lecture:
+
+|  | Pages (Act 1) | KV blocks (Act 10) |
+| --- | --- | --- |
+| Shared until... | a write to a page | a mutation of a block |
+| Mechanism | page table + fault | refcount + clone |
+| Cost of sharing | ~zero | ~zero |
+| Cost of the copy | one page, on first write | one block, on first mutation |
+
+Copy-on-write was not a kernel trivia detail. It is a **design pattern**:
+share what is immutable, duplicate lazily on divergence.
+
+The kernel did it for `fork()`; we just did it for KV blocks.
+Same principle, different layer — and you will meet it again wherever
+large shared state meets occasional mutation.
+
+---
+
+# 🏟️ Act 10: The Full Request Lifetime
+
+```
+request starts →  arena_create()             (variable-size metadata)
+                  kv_block_alloc() × N        (fixed-size KV blocks)
+request runs   →  arena_alloc() bumps along; blocks fill up
+request ends   →  arena_destroy()             — one free, metadata gone
+                  kv_block_free() × N          — blocks return to the pool
+```
+
+- Metadata leaks are structurally impossible (arena).
+- KV memory never touches `malloc` at all (pool).
+- Timeout/crash cleanup = the same two lines, in a loop.
+
+This is the shape of real serving engines. It is also this week's lab —
+and the first brick of your end-of-semester project.
+
+---
+
+# ⚖️ Act 10: What the Pool Costs Us
+
+| `malloc`-per-fragment | Fixed KV pool |
+| --- | --- |
+| any size, any time | one size per pool |
+| pays per allocation (search, syscall risk) | O(1) pop/push |
+| external fragmentation | none between blocks; internal if blocks oversized |
+| no sharing | refcounted sharing |
+| cleanup scattered | one `munmap` |
+
+Real engines run **several** pools (multiple size classes — segregated lists,
+Act 6!) and fall back to `mmap` for odd sizes. Nothing here is exotic;
+it is this lecture, applied.
+
+---
+
+# 🦀 Rust Callout: Shared Blocks, Atomically
+
+Our `refcount` array, as a type:
+
+```rust
+use std::sync::Arc;
+let prefix: Arc<KVBlock> = Arc::new(compute_prefix());
+let r1 = prefix.clone();   // refcount++ — cheap
+let r2 = prefix.clone();   // refcount++ — cheap
+// when the last Arc drops → memory freed. No kv_block_free to forget.
+```
+
+`Arc` = **atomic** reference counting = a thread-safe `refcount`.
+Inference engines written in Rust manage shared prefixes exactly this way.
+The C version is what you build in the lab.
 
 ---
 
@@ -821,37 +1411,54 @@ v.push(1);                           // grows by doubling — realloc underneath
 | `free(p); /* p still usable */` | `drop` at scope end; no manual call |
 | realloc dance with `tmp` | `Vec`/`String` handle growth internally |
 
-Underneath, Rust calls a **global allocator** — historically the system's,
+Underneath, Rust calls a global allocator — historically the system's,
 often `jemalloc` in practice. Same heap, different contract.
 
 ---
 
-# 🧪 Lab: Build Your Own Allocator
+# 🧪 Lab 6: Build the KV Cache Memory Pool (1-Week Lab)
 
-This week's lab is the assignment specification. In C, no libc `malloc`
-inside your implementation (wrap it with `-Dmalloc=mymalloc` style tricks or
-a test harness):
+This week's lab is a take-home mini-project — and **Part 1 of the final
+project's memory subsystem**. Full spec is in `lab6-kv-cache.md`; the API:
 
 ```c
-void *mymalloc(size_t size);
-void  myfree(void *ptr);
-void *myrealloc(void *ptr, size_t size);
+KVPool *kv_pool_create(size_t block_size, size_t nblocks);
+void   *kv_block_alloc(KVPool *pool);          /* NULL when exhausted */
+void    kv_block_free(KVPool *pool, void *ptr);
+void    kv_block_share(KVPool *pool, void *ptr);
+void    kv_pool_destroy(KVPool *pool);          /* exactly one munmap */
+
+Arena *arena_create(size_t cap);
+void  *arena_alloc(Arena *a, size_t size);      /* 16-byte aligned */
+void   arena_reset(Arena *a);
+void   arena_destroy(Arena *a);
 ```
 
-Requirements:
-
-- implicit free list + first fit (bonus: explicit list, best fit);
-- splitting with a minimum block size; coalescing on free (boundary tags);
-- 16-byte aligned payloads;
-- grow the heap with `sbrk` (bonus: `mmap` for big requests);
-- a Valgrind/ASan-clean test suite: alloc/free loops, realloc growth, fragmentation stress.
-
-Benchmark against libc `malloc`. Losing is expected; understanding is the point.
-(This lab is the seed of the upcoming memory-allocator programming assignment.)
+This is the code from Acts 9–10, re-typed by you, tested, benchmarked.
+Everything you need is on these slides — no new ideas, only new keystrokes.
 
 ---
 
-# 🏁 Summary: The Story So Far
+# 🧪 Lab 6: Rules of the Game
+
+- pool internals: **exactly one `mmap`**, zero `malloc` calls in `kvpool.c`;
+- O(1) alloc/free; 16-byte aligned blocks; Valgrind-clean test suite;
+- benchmark against libc `malloc` (time + peak RSS) and write it up;
+- bonus: double-free detection, COW-style cloning, `pthread_mutex_t` teaser.
+
+The grader's first commands, worth memorizing:
+
+```bash
+grep -n "malloc\|calloc\|realloc\|free(" kvpool.c   # must find nothing
+valgrind --leak-check=full ./test_kvpool            # must be silent
+```
+
+We wrote `mymalloc` together in class. Thursday you make the same ideas
+serve a real workload.
+
+---
+
+# 🏁 Summary I: The Allocator's Story
 
 | Mystery / breakage | Fix | Lesson |
 | --- | --- | --- |
@@ -862,6 +1469,17 @@ Benchmark against libc `malloc`. Losing is expected; understanding is the point.
 | heap full, yet `malloc` fails | fragmentation | size classes, arenas, better placement |
 | `realloc` overwrites my only pointer | temp pointer + NULL check | the old block survives failure |
 | agents eat all RAM | `setrlimit` in the fork/exec gap | limits are part of supervision |
+
+---
+
+# 🏁 Summary II: The Agents' Story
+
+| Mystery / breakage | Fix | Lesson |
+| --- | --- | --- |
+| generic `malloc` crumbles under KV workloads | fixed-size pool | one size kills external fragmentation |
+| two requests, one prompt | refcounted shared blocks | share immutable, copy on mutation |
+| request metadata leaks everywhere | arena | many allocations, one free |
+| bad pointers from callers | validate before trusting | defensive allocator boundaries |
 
 Next week: **threads** — one address space, many actors, and every rule from
 today's "separate memory" column quietly retired. Bring your mutexes.
@@ -1042,5 +1660,30 @@ machine runs dry — supervision includes expecting that call.
 | `FILE` buffers | heap (inside the `FILE` struct's buffer) |
 
 `fork()` copies all of it — lazily. `exec()` replaces all of it — except fds.
+
+---
+
+# 📎 FM 11: The Single-Region Pool Pattern (Lab 6 Reference)
+
+```c
+typedef struct {
+    size_t   block_size;
+    size_t   nblocks;
+    uint32_t free_head;
+    char     data[];   /* [ next_free[] ][ refcount[] ][ pad ][ blocks... ] */
+} KVPool;
+```
+
+| Quantity | Formula |
+| --- | --- |
+| free list offset | `p->data` |
+| refcount offset | `p->data + nblocks * sizeof(uint32_t)` |
+| first block | align up to 16: `(addr + 15) & ~15` (absolute address!) |
+| block `i` | `pool_blocks(p) + i * block_size` |
+| index from pointer | `(ptr - pool_blocks(p)) / block_size` |
+| total for `munmap` | `(pool_blocks(p) - (char *)p) + nblocks * block_size` |
+
+Rules: flexible array member last; one `mmap`/one `munmap`; `UINT32_MAX` = end
+of free list; refcount `> 1` means "free just decrements" (COW sharing).
 
 Field Manual ends. Remember: stories teach, manuals remind.
