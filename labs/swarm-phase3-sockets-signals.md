@@ -50,7 +50,7 @@ not a rewrite. Then comes the hardening: signals, crashes, timeouts, load.
                     PLAN_REQ,...) │   │
                               leader 0   leader 1 ...
                                   ▲
-                    TCP (NEXT/GOTO/PAINTED)
+                    TCP (NEXT/GOTO/AT)
                           follower threads
 ```
 
