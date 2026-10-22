@@ -44,6 +44,26 @@ if (r != 0) perror("pthread_create");
 
 ---
 
+# 🦀 Rust Callout: `spawn` and `join`
+
+```rust
+use std::thread;
+
+let arg = 10;
+let handle = thread::spawn(move || {   // closure = start routine + its argument
+    arg * 2                            // the return value is the thread's result
+});
+let result = handle.join().unwrap();   // Err(..) if the thread panicked
+```
+
+- No `void *` in, no `void *` out: the closure **owns** what it captured (`move`) and `join` hands back a typed value.
+- This removes the classic `&i` argument bug: each closure owns its own `id`.
+- Same syscalls underneath (`clone`, futex); the compiler checks what crosses the thread boundary.
+
+*(🦀 boxes are pattern-recognition only. You don't need to write Rust.)*
+
+---
+
 ## Thread Termination
 A thread terminates when:
 1. Its start function returns.
@@ -129,6 +149,27 @@ int main() {
 
 ---
 
+# 🦀 Rust Callout: The Compiler Refuses the Race
+
+```rust
+let mut count = 0;
+let t1 = thread::spawn(|| { for _ in 0..1000 { count += 1; } });
+let t2 = thread::spawn(|| { for _ in 0..1000 { count += 1; } });
+// error[E0373]: closure may outlive the current function, but it borrows `count`
+// error[E0499]: cannot borrow `count` as mutable more than once at a time
+```
+
+The C version compiles and gives a different answer every run. Safe Rust **will not compile** two threads mutating one variable. To share it you must say how:
+
+```rust
+let count = Arc::new(Mutex::new(0));         // the lock owns the data
+// each thread: *count.lock().unwrap() += 1;  // you cannot touch it without locking
+```
+
+In C the mutex and the data are two separate things you must remember to pair. (Mutexes: next week.)
+
+---
+
 ## Thread-Unsafe Functions
 Examples: `asctime`, `strtok`, `strerror`.
 - **Unsafe Code**:
@@ -145,6 +186,20 @@ int to_message_r(int num, char *buf, size_t nbytes) {
     snprintf(buf, nbytes, "%d : blah", num); // Caller-managed buffer
 }
 ```
+
+---
+
+# 🦀 Rust Callout: `Send` and `Sync`
+
+```rust
+let shared = Rc::new(5);                       // Rc: non-atomic reference count
+thread::spawn(move || println!("{shared}"));
+// error[E0277]: `Rc<i32>` cannot be sent between threads safely
+```
+
+- **`Send`**: the value may move to another thread. **`Sync`**: a reference to it may be shared between threads.
+- `Rc` (plain counter) is neither; `Arc` (atomic counter, like the `refcount` from Week 6) is both.
+- It is the Rust version of the thread-unsafe functions above: the *type* says whether it is safe to share, and the compiler checks it.
 
 ---
 
@@ -173,6 +228,23 @@ int *map(int (*func)(int), int *arr, size_t len) {
     return ret;
 }
 ```
+
+---
+
+# 🦀 Rust Callout: Sharded Work, No Locks
+
+```rust
+let data: Vec<u64> = (1..=1_000_000).collect();
+let mut partial = [0u64; 4];
+thread::scope(|s| {                                    // threads may borrow locals
+    for (chunk, out) in data.chunks(data.len() / 4).zip(partial.iter_mut()) {
+        s.spawn(move || { *out = chunk.iter().sum(); }); // each thread owns ONE slot
+    }
+});                                                    // implicit join of every thread
+let total: u64 = partial.iter().sum();
+```
+
+This is Lab 7's "partition the data" fix: each thread reads its own chunk and writes only its own slot. Rust *proves* the slots do not overlap (`iter_mut` hands out disjoint references); in C that proof is your job.
 
 ---
 
