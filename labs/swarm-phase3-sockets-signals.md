@@ -2,7 +2,7 @@
 
 **BIL 322 System Programming — Final Project, Phase 3**
 **Duration:** 1–2 weeks
-**Project:** [Drone Swarm Painters](../projects/project3-drone-swarm-painters.md)
+**Project:** [19 Mayıs Drone Show](../projects/project3-drone-show-19-mayis.md)
 **Submission:** GitHub Classroom (repository) + Google Classroom link, plus a final demo
 
 > **Status: DRAFT.** Details, numbers, and the skeleton code are finalized the
@@ -18,8 +18,9 @@ share memory. In this phase **every link becomes a TCP connection**:
 | Link | Phase 1-2 | Phase 3 |
 |---|---|---|
 | Center ↔ leader | pipes | TCP |
-| Leader ↔ follower | function calls and a queue | TCP (each follower thread has a socket to its leader) |
+| Leader ↔ follower | function calls and a barrier | TCP (each follower thread has a socket to its leader: `NEXT`/`GOTO`/`AT`) |
 | Center ↔ viewer | shared memory | TCP (`FRAME` and `DRONE` messages) |
+| Beat clock | local timer | `BEAT <n>` messages from the center |
 
 Because your protocol code works on file descriptors, this should be a transport change,
 not a rewrite. Then comes the hardening: signals, crashes, timeouts, load.
@@ -78,10 +79,10 @@ int  conn_recv_line(conn_t *c, char *buf, size_t n); /* buffers partial reads, 0
 - **Center:** accepts leaders and viewers. Choose and justify the model (thread per
   connection with your Phase 1 queue and planner pool, or a `poll` loop that feeds the
   pool). A full request queue still answers `BUSY`.
-- **Leader:** connects to the center, announces itself with `HELLO`, requests a plan,
-  and serves its followers on a local listening socket (the followers connect to it).
-- **Follower:** a thread that connects to its leader, sends `NEXT`, receives `GOTO`,
-  moves, and sends `PAINTED`.
+- **Leader:** connects to the center, announces itself with `HELLO`, requests a plan for each `THEME`,
+  and serves its followers on a local listening socket (the followers connect to it). On each `BEAT <n>` from the center, it tells every follower its target.
+- **Follower:** a thread that connects to its leader, sends `NEXT <id> <beat>`, receives `GOTO`,
+  moves, and reports `AT`.
 - **Viewer:** connects to the center and redraws on `FRAME`. The center sends
   frames at most every 100 ms and **drops frames for a slow viewer** instead of
   blocking (a bounded per-viewer send queue). Test with a viewer that sleeps.
@@ -92,17 +93,17 @@ int  conn_recv_line(conn_t *c, char *buf, size_t n); /* buffers partial reads, 0
   within 2 seconds, with no zombie processes and no leaked file descriptors (check `lsof`).
 - Handlers only set a `volatile sig_atomic_t` flag (or write to a self-pipe); the main
   loops react to it.
-- **Leader crash:** the center sends no `HEARTBEAT` reply for 3 seconds ⇒ the leader is
-  declared dead, its unfinished region is reassigned to another leader, and the swarm still completes
-  the picture. Test by killing a leader with `SIGKILL` mid-run.
+- **Leader crash:** the center receives no `HEARTBEAT` from a leader for 3 seconds ⇒ the leader is
+  declared dead, its zone is taken over by a neighboring leader (the center sends a new
+  `ASSIGN`/`THEME`), and the show still completes. Test by killing a leader with `SIGKILL` mid-run.
 - **Center restart (optional):** leaders retry the connection with randomized exponential
   backoff.
 
 ## 📈 Task 4: Load Test and Report (25%)
 
 - `make loadtest` starts one center, 4+ leaders with 50+ followers in total, and a headless viewer,
-  paints the provided image, and prints: completion time, number of `BUSY` replies, messages per
-  second, and the accuracy against the target.
+  performs the provided score, and prints: completion time, number of `BUSY` replies, messages per
+  second, the performance score, and the number of safety violations (must be 0).
 - Find the bottleneck (planner pool size, queue capacity, locks, or sockets) and change one
   parameter to show its effect.
 - `REPORT.md`: protocol changes (if any), concurrency model and why, signal design, fault
@@ -112,13 +113,13 @@ int  conn_recv_line(conn_t *c, char *buf, size_t n); /* buffers partial reads, 0
 
 ## 🎬 Final Demo
 
-Show the swarm painting a picture of your choice (within the size limit) on a lab machine, with the
+Perform a score of your own (a 60-second show to music you choose, within the size limit) on a lab machine, with the
 viewer on a second machine if possible, kill one leader live, then shut everything down with `Ctrl-C`.
 
 ## 🚀 Bonus (up to +15%)
 
-- B1: Replace the stub planner with a call to a real model through HTTP, behind `plan_region`.
-- B2: Swarm formations: followers fly in formation (line, circle) between cells.
+- B1: Replace the stub planner with a call to a real model through HTTP, behind `plan_section`. The protocol is unchanged.
+- B2: New themes for the stub planner (your own formations, for example the crescent and star).
 - B3: A web viewer (WebSocket) that shows the swarm in a browser.
 - B4: Followers as separate processes (same code, different `main`).
 
