@@ -1,66 +1,68 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 420" width="1000" height="420" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 470" width="1000" height="470" role="img">
 <defs>
 <marker id="ah3fb950" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3fb950"/></marker>
-<marker id="ahs3fb950" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#3fb950"/></marker>
 <marker id="ah58a6ff" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/></marker>
-<marker id="ahs58a6ff" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#58a6ff"/></marker>
-<marker id="ahbc8cff" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#bc8cff"/></marker>
-<marker id="ahsbc8cff" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#bc8cff"/></marker>
 <marker id="ahf0883e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f0883e"/></marker>
-<marker id="ahsf0883e" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#f0883e"/></marker>
+<marker id="ah9aa4b2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9aa4b2"/></marker>
 </defs>
-<rect x="0" y="0" width="1000" height="420" rx="14" fill="#161b22"/>
-<text x="20" y="30.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" font-weight="700" fill="#e6edf3" text-anchor="start" dominant-baseline="central">one mmap = one region:</text>
-<rect x="20" y="120" width="90" height="70" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
-<text x="65.0" y="144.8" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">KVPool</text>
-<text x="65.0" y="165.2" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">header</text>
-<rect x="110" y="120" width="160" height="70" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
-<text x="190.0" y="144.8" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">next_free[]</text>
-<text x="190.0" y="165.2" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">n × 4 B</text>
-<rect x="270" y="120" width="130" height="70" rx="6" fill="#2a1f45" stroke="#bc8cff" stroke-width="2"/>
-<text x="335.0" y="144.8" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">refcount[]</text>
-<text x="335.0" y="165.2" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">n × 2 B</text>
-<rect x="400" y="120" width="46" height="70" rx="6" fill="#262c36" stroke="#6e7681" stroke-width="2"/>
-<text x="423.0" y="155.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">pad</text>
-<rect x="446" y="120" width="116" height="70" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
-<text x="504.0" y="155.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">block 0</text>
-<rect x="562" y="120" width="116" height="70" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
-<text x="620.0" y="155.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">block 1</text>
-<rect x="678" y="120" width="116" height="70" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
-<text x="736.0" y="155.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">block 2</text>
-<rect x="794" y="120" width="90" height="70" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
-<text x="839.0" y="155.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">…</text>
-<rect x="884" y="120" width="96" height="70" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
-<text x="932.0" y="155.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">n−1</text>
-<path d="M 110,100 L 980,100" fill="none" stroke="#9aa4b2" stroke-width="2"/>
-<path d="M 110,100 L 110,108" fill="none" stroke="#9aa4b2" stroke-width="2"/>
-<path d="M 980,100 L 980,108" fill="none" stroke="#9aa4b2" stroke-width="2"/>
-<text x="545" y="82.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="16" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">data[]: the flexible array member, everything after the header</text>
-<path d="M 110,242 L 110,193" fill="none" stroke="#58a6ff" stroke-width="2" marker-end="url(#ah58a6ff)"/>
-<text x="110" y="258.4" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#58a6ff" text-anchor="middle" dominant-baseline="central">pool_next_free(p)</text>
-<text x="110" y="277.6" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#58a6ff" text-anchor="middle" dominant-baseline="central">= p-&gt;data</text>
-<path d="M 270,242 L 270,193" fill="none" stroke="#bc8cff" stroke-width="2" marker-end="url(#ahbc8cff)"/>
-<text x="270" y="268.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#bc8cff" text-anchor="middle" dominant-baseline="central">pool_refcount(p)</text>
-<path d="M 446,242 L 446,193" fill="none" stroke="#3fb950" stroke-width="2" marker-end="url(#ah3fb950)"/>
-<text x="446" y="258.4" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#3fb950" text-anchor="middle" dominant-baseline="central">pool_blocks(p)</text>
-<text x="446" y="277.6" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#3fb950" text-anchor="middle" dominant-baseline="central">16-byte aligned</text>
-<text x="20" y="318.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" font-weight="700" fill="#e6edf3" text-anchor="start" dominant-baseline="central">free list = chain of indices stored in next_free[]</text>
-<rect x="20" y="345" width="130" height="44" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
-<text x="85.0" y="367.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">free_head = 0</text>
-<rect x="240" y="345" width="90" height="44" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
-<text x="285.0" y="367.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">1</text>
-<text x="285" y="334.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">[0]</text>
-<rect x="350" y="345" width="90" height="44" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
-<text x="395.0" y="367.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">2</text>
-<text x="395" y="334.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">[1]</text>
-<rect x="460" y="345" width="90" height="44" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
-<text x="505.0" y="367.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">3</text>
-<text x="505" y="334.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">[2]</text>
-<rect x="570" y="345" width="90" height="44" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
-<text x="615.0" y="367.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">…</text>
-<rect x="680" y="345" width="90" height="44" rx="6" fill="#3d1417" stroke="#f85149" stroke-width="2"/>
-<text x="725.0" y="367.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="17" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">END</text>
-<text x="725" y="334.0" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">[n−1]</text>
-<path d="M 150,367 L 240,367" fill="none" stroke="#f0883e" stroke-width="2" marker-end="url(#ahf0883e)"/>
-<text x="240" y="408.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="start" dominant-baseline="central">alloc pops the head, free pushes onto it: both O(1)</text>
+<rect x="0" y="0" width="1000" height="470" rx="14" fill="#161b22"/>
+<text x="20" y="30" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" font-weight="700" fill="#e6edf3" text-anchor="start" dominant-baseline="central">after create: every block is free, linked in address order</text>
+<rect x="20" y="100" width="110" height="64" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="75" y="122" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">KVPool</text>
+<text x="75" y="144" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="13" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">header 32 B</text>
+<rect x="150" y="100" width="120" height="64" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
+<line x1="150" y1="132" x2="270" y2="132" stroke="#3fb950" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="210" y="116" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">block 0</text>
+<text x="210" y="148" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="14" fill="#3fb950" text-anchor="middle" dominant-baseline="central">next</text>
+<rect x="300" y="100" width="120" height="64" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
+<line x1="300" y1="132" x2="420" y2="132" stroke="#3fb950" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="360" y="116" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">block 1</text>
+<text x="360" y="148" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="14" fill="#3fb950" text-anchor="middle" dominant-baseline="central">next</text>
+<rect x="450" y="100" width="120" height="64" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
+<line x1="450" y1="132" x2="570" y2="132" stroke="#3fb950" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="510" y="116" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">block 2</text>
+<text x="510" y="148" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="14" fill="#3fb950" text-anchor="middle" dominant-baseline="central">next</text>
+<rect x="600" y="100" width="120" height="64" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
+<line x1="600" y1="132" x2="720" y2="132" stroke="#3fb950" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="660" y="116" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">block 3</text>
+<text x="660" y="148" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="14" fill="#3fb950" text-anchor="middle" dominant-baseline="central">next</text>
+<rect x="750" y="100" width="120" height="64" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="810" y="132" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">… block n−1</text>
+<text x="945" y="132" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#f85149" text-anchor="middle" dominant-baseline="central">NULL</text>
+<rect x="20" y="42" width="130" height="34" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="85" y="59" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">free_head</text>
+<path d="M 150,59 C 190,59 210,70 210,98" fill="none" stroke="#f0883e" stroke-width="2" marker-end="url(#ahf0883e)"/>
+<path d="M 210,164 C 210,198 360,198 360,168" fill="none" stroke="#3fb950" stroke-width="2" marker-end="url(#ah3fb950)"/>
+<path d="M 360,164 C 360,198 510,198 510,168" fill="none" stroke="#3fb950" stroke-width="2" marker-end="url(#ah3fb950)"/>
+<path d="M 510,164 C 510,198 660,198 660,168" fill="none" stroke="#3fb950" stroke-width="2" marker-end="url(#ah3fb950)"/>
+<path d="M 660,164 C 660,198 810,198 810,168" fill="none" stroke="#3fb950" stroke-width="2" marker-end="url(#ah3fb950)"/>
+<path d="M 870,132 L 905,132" fill="none" stroke="#3fb950" stroke-width="2" marker-end="url(#ah3fb950)"/>
+<text x="20" y="250" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" font-weight="700" fill="#e6edf3" text-anchor="start" dominant-baseline="central">after kv_blocks_alloc(p, 2, out): out = {block 0, block 1}</text>
+<rect x="20" y="320" width="110" height="64" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="75" y="342" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">KVPool</text>
+<text x="75" y="364" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="13" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">header 32 B</text>
+<rect x="150" y="320" width="120" height="64" rx="6" fill="#2a1f45" stroke="#bc8cff" stroke-width="2"/>
+<text x="210" y="342" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">block 0</text>
+<text x="210" y="364" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="13" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">caller’s data</text>
+<rect x="300" y="320" width="120" height="64" rx="6" fill="#2a1f45" stroke="#bc8cff" stroke-width="2"/>
+<text x="360" y="342" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">block 1</text>
+<text x="360" y="364" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="13" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">caller’s data</text>
+<rect x="450" y="320" width="120" height="64" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
+<line x1="450" y1="352" x2="570" y2="352" stroke="#3fb950" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="510" y="336" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">block 2</text>
+<text x="510" y="368" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="14" fill="#3fb950" text-anchor="middle" dominant-baseline="central">next</text>
+<rect x="600" y="320" width="120" height="64" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2"/>
+<line x1="600" y1="352" x2="720" y2="352" stroke="#3fb950" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="660" y="336" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">block 3</text>
+<text x="660" y="368" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="14" fill="#3fb950" text-anchor="middle" dominant-baseline="central">next</text>
+<rect x="750" y="320" width="120" height="64" rx="6" fill="#12361f" stroke="#3fb950" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="810" y="352" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">… block n−1</text>
+<text x="945" y="352" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#f85149" text-anchor="middle" dominant-baseline="central">NULL</text>
+<rect x="20" y="262" width="130" height="34" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="85" y="279" font-family="ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">free_head</text>
+<path d="M 150,279 C 490,279 510,290 510,318" fill="none" stroke="#f0883e" stroke-width="2" marker-end="url(#ahf0883e)"/>
+<path d="M 510,384 C 510,418 660,418 660,388" fill="none" stroke="#3fb950" stroke-width="2" marker-end="url(#ah3fb950)"/>
+<path d="M 660,384 C 660,418 810,418 810,388" fill="none" stroke="#3fb950" stroke-width="2" marker-end="url(#ah3fb950)"/>
+<path d="M 870,352 L 905,352" fill="none" stroke="#3fb950" stroke-width="2" marker-end="url(#ah3fb950)"/>
+<text x="500" y="450" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">alloc pops from free_head, free pushes onto it: both O(1). An allocated block has no header.</text>
 </svg>
