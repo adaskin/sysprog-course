@@ -257,6 +257,25 @@ This makes the concepts of parallelism and concurrency applicable for both tasks
     - Faster communication and synchronization.
 ---
 
+<!-- Slide 9b -->
+### 🤖 Worker Agents: Processes or Threads?
+
+Week 4: orchestrator `fork()`s one **process** per worker agent. Week 6: a leaking agent dies alone. 🤔 What changes with threads?
+
+| | 🧱 Process agents | 🧵 Thread agents |
+|---|---|---|
+| Spawn cost | `fork` + `exec` | `pthread_create` (much cheaper) |
+| Memory | separate address space | **shared** heap, globals |
+| Share results | pipes, sockets, files | just a pointer 😍 |
+| Agent leaks / crashes | dies alone ✅ | **takes the orchestrator down** 💥 |
+| Limits (`setrlimit`) | per agent | per *process* only |
+
+- Thread agents are great for **cheap, trusted, I/O-bound** tool calls (HTTP, DB, file reads).
+- Process agents are better for **untrusted or heavy** workers (LLM-generated code, big models).
+- Sharing memory is a feature *and* the source of every bug in the next slides... 👀
+
+---
+
 <!-- Slide 10 -->
 ### Timing of 50,000 Process/Thread Creations
 

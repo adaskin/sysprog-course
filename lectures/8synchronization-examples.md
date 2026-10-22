@@ -398,6 +398,25 @@ A situation where two or more threads are **blocked forever**, each waiting for 
 
 ---
 
+## 🤖 Deadlock in a Multi-Agent Pipeline
+
+```c
+// Orchestrator thread                // Worker agent thread
+while (more_tasks) {                  while (1) {
+    enqueue(tasks, t);  // 🛑 full!       t = dequeue(tasks);
+    // ... never drains results           r = run(t);
+}                                         enqueue(results, r);  // 🛑 full!
+                                      }
+```
+
+- Orchestrator waits for **space in `tasks`**; worker waits for **space in `results`**, which only the orchestrator drains. 🔄
+- It is the same A-waits-B-waits-A cycle as Lock A / Lock B, but the "locks" are **queue slots**.
+- Coffman check: mutual exclusion ✅ (slots), hold and wait ✅, no preemption ✅, circular wait ✅.
+- 🛠️ Fixes: a dedicated thread drains `results` (break the cycle), unbounded or larger results queue, or `pthread_mutex_trylock` or `sem_timedwait` with a timeout.
+- Related: an agent that holds a file lock while waiting for another agent's reply.
+
+---
+
 ## Livelock
 - Threads **actively respond** to each other but make no progress.
 - Example: Philosophers repeatedly picking up and putting down chopsticks.
@@ -482,6 +501,24 @@ void *philosopher2(void *arg) {
 }
 ```
 **Issue**: Philosophers may endlessly release/retry chopsticks (no progress).
+
+---
+
+## 🤖 Livelock: Agents That Politely Retry Forever
+
+Two agents need the same two resources (a file and an API slot). Both back off on conflict and retry after **the same fixed delay**:
+
+```c
+while (!(got_all = try_acquire_both())) {
+    release_all();
+    sleep(1);               // 🔴 same delay → collide again, forever
+}
+```
+
+- Everyone is busy, nobody makes progress: a **livelock**, not a deadlock.
+- 🎲 Fix: **randomized exponential backoff**: `sleep(rand() % (1 << attempt))` so the agents desynchronize.
+- Same idea as retry-with-jitter for API rate limits (HTTP 429). 🌐
+- Also cap the retries and report failure to the orchestrator.
 
 ---
 

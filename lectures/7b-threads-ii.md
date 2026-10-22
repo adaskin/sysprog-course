@@ -78,6 +78,35 @@ void *increment(void *n) {
 
 ---
 
+## 🤖 Race Condition Example: Agents Collecting Results
+
+Two worker agents (threads) finish their tool calls at the same time:
+
+```c
+Result results[MAX];
+int n_done = 0;                    // shared by all agent threads
+
+void *agent(void *task) {
+    Result r = run_tool_call(task);
+    results[n_done] = r;           // 🔴 both agents read the same n_done
+    n_done++;                      // 🔴 non-atomic load / add / store
+    return NULL;
+}
+```
+
+| Step | Agent A | Agent B |
+|---|---|---|
+| 1 | reads `n_done = 3` | |
+| 2 | | reads `n_done = 3` |
+| 3 | writes `results[3]` | writes `results[3]` 💥 |
+| 4 | `n_done = 4` | `n_done = 4` |
+
+- 😱 One result is **silently lost**, and the orchestrator never knows.
+- Same bug as `count++` and the bank balance: **check-then-act on shared state**.
+- 🤔 The `strtok` and `static char result[256]` examples below: what if the agent's *log formatter* does that?
+
+---
+
 ## Race Condition Example
 ### Code
 ```c
@@ -346,6 +375,24 @@ print("Results:", results)
  
 ---
 
+## 🤖 Thread Pool = Agent Tool Runner
+
+An orchestrator turns one user request into many **tool calls**: search, read file, call API...
+
+```c
+pthread_mutex_t lock;        // protects the queue
+pthread_cond_t  cond;        // "a tool call is waiting"
+Queue tool_calls;            // pending work items (the task queue)
+// N worker threads: wait on cond, pop a tool call, run it, store the result
+```
+
+- 🌐 Tool calls mostly **wait on the network** → I/O-bound → pool size ≫ cores (the `cores × 5` rule).
+- 🧠 Running a local model or parsing big files → CPU-bound → pool size ≈ cores.
+- ⏱️ Slow API? Use a timeout like the Java `future.get(5, SECONDS)` example: a stuck agent must not hold a worker forever.
+- 🚧 The queue and the results list are **shared state**: every access goes under the mutex.
+
+---
+
 ## 🤹 Coroutines: Cooperative Concurrency  
 **🆚 vs Threads**:  
 
@@ -394,6 +441,27 @@ async def main():
     )
     print("All done!", results)
 ```
+
+---
+
+## 🤖 Async Agents: Concurrent, Still Racy
+
+Most agent frameworks use coroutines (`asyncio`) for tool calls. No parallelism, but **an `await` is a switch point**:
+
+```python
+budget = 100                           # shared token budget
+
+async def agent(name, cost):
+    global budget
+    if budget >= cost:                 # check
+        await call_llm(name)           # ⏸️ other agents run here
+        budget -= cost                 # 🔴 act: budget may already be gone
+```
+
+- ✅ No data race inside one statement, because there is no preemption.
+- 🔴 But *check-then-act across an `await`* is still a **race condition**: two agents both pass the check.
+- Fix: `asyncio.Lock()` or reserve the budget **before** awaiting.
+- Threads + `await` can be combined (`run_in_executor`), so a real lock is still needed.
 
 ---
 
