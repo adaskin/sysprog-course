@@ -651,49 +651,6 @@ Batch of 8 → **≈ 16 GiB**.
 
 ---
 
-# 🧱 Act 10: KV Blocks Are Allocator Blocks
-
-Real serving engines manage KV memory in **fixed-size blocks**:
-
-```c
-typedef struct {
-    uint32_t request_id, layer_id;
-    uint32_t token_start, token_count;
-    uint16_t refcount, flags;
-    size_t   size;              /* payload bytes */
-} KVHeader;
-
-typedef struct {
-    KVHeader hdr;
-    char     data[];            /* flexible array member — Week 2! */
-} KVBlock;
-```
-
-🤔 Week 2 quiz: where is the padding in `KVHeader`?
-
----
-
-# 🧱 Act 10: The Padding — and the Same Old Arithmetic
-
-```
- 0         4         8         12        16  18  20        24        32
- [ req_id ][layer_id][tok_beg ][tok_cnt ][rc][fl][  pad   ][  size  ]
-                                                     ↑ 4 pad bytes
-```
-
-`size_t` needs 8-byte alignment, so `KVHeader` is 32 bytes, not 28. Our `mymalloc` `Tag` + `Block`, in an inference costume:
-
-```c
-/* header from payload */
-KVBlock *b = (KVBlock *)((char *)payload - offsetof(KVBlock, data));
-/* next block */
-KVBlock *next = (KVBlock *)((char *)b + offsetof(KVBlock, data) + b->hdr.size);
-```
-
-Avoid `(KVBlock *)payload - 1`: it breaks silently when someone adds a header field. `offsetof` doesn't.
-
----
-
 # ❓ Act 10: So... Just `malloc` It?
 
 The naive design:
@@ -719,65 +676,57 @@ Better tools, already in this lecture: **pools** and **arenas**.
 
 ---
 
+# 🧱 Act 10: KV Blocks Are Allocator Blocks
+
+Real serving engines manage KV memory in **fixed-size blocks** (say 16 KB each).
+A request that needs more KV space takes one more block; a finished request gives all of its blocks back.
+
+That is our `mymalloc` with one change: **every request asks for the same size.**
+
+🤔 Look at the `mymalloc` pieces from Act 4: size header, splitting, coalescing, first-fit search, free list.
+Which of them still do any work when every block is 16 KB?
+
+---
+
+# 🧱 Act 10: What Fixed Size Deletes
+
+| `mymalloc` piece (Act 4) | Fixed-size pool |
+| --- | --- |
+| size header in every block | **gone**: the size is stored once, in the pool |
+| first-fit search | **gone**: the first free block always fits |
+| splitting | **gone**: nothing is ever too big |
+| coalescing, boundary tags | **gone**: two free blocks never need to merge |
+| explicit free list | **stays**: `next` lives inside each free block |
+
+A free block's bytes are unused, so its first 8 bytes hold the address of the next free block.
+An allocated block has **no header at all**: all `block_size` bytes belong to the caller.
+
+---
+
 # 🗃️ Act 10: The Fixed-Size KV Pool — One Region
 
-If every KV block is the same size (say 16 KB), **external fragmentation vanishes**: any free block serves any request.
-
 ```c
+typedef struct FreeBlock {
+    struct FreeBlock *next;   /* only meaningful while the block is free */
+} FreeBlock;
+
 typedef struct {
-    size_t   block_size;   /* payload bytes per block (e.g. 16384) */
-    size_t   nblocks;
-    uint32_t free_head;    /* first free block; UINT32_MAX = none  */
-    char     data[];       /* everything lives here                */
+    size_t     block_size;    /* bytes per block (multiple of 16)         */
+    size_t     nblocks;
+    size_t     nfree;         /* blocks on the free list right now        */
+    FreeBlock *free_head;     /* first free block; NULL = pool exhausted  */
+    char       data[];        /* block 0, block 1, ... live here          */
 } KVPool;
 ```
 
-- Struct + heap in **one `mmap`**, cleaned up by **one `munmap`**. No `char *base`, no separate arrays.
-- The flexible array member must be **last**; members are ordered largest alignment first, so no padding between them.
-- The free list is an array of **indices**, not pointers: Act 4's explicit free list without alignment trouble.
+- Header + blocks in **one `mmap`**, cleaned up by **one `munmap`** of `sizeof(KVPool) + nblocks * block_size`.
+- The flexible array member must be **last**. `offsetof(KVPool, data)` is **32**: `mmap` returns a page-aligned address, so block 0 is 16-byte aligned, and so is every block after it.
 
 ---
 
-# 🗺️ Act 10: Inside `data[]`
+# 🗺️ Act 10: The Free List Lives in the Free Blocks
 
 ![w:1000](images/w6-pool-layout.svg)
-
----
-
-# 🧰 Act 10: The Three Layout Helpers
-
-Everything else in the pool falls out of these:
-
-```c
-static uint32_t *pool_next_free(KVPool *p) { return (uint32_t *)p->data; }
-static uint16_t *pool_refcount(KVPool *p) {
-    return (uint16_t *)(p->data + p->nblocks * sizeof(uint32_t));
-}
-static char *pool_blocks(KVPool *p) {
-    char *m = p->data + p->nblocks * (sizeof(uint32_t) + sizeof(uint16_t));
-    return (char *)(((uintptr_t)m + 15) & ~(uintptr_t)15);  /* absolute! */
-}
-```
-
-`offsetof(KVPool, data)` is **20** (8 + 8 + 4), while `sizeof(KVPool)` is **24** (tail padding). Don't mix them up.
-
----
-
-# ✏️ Act 10: Paper Exercise — Size the mmap
-
-On paper, the exact computation the lab needs. `block_size = 16384`, `nblocks = 512`.
-
-1. How many bytes do the `next_free` and `refcount` arrays occupy together?
-2. `data[]` starts at offset `offsetof(KVPool, data)` = 20. After the metadata arrays, what must happen before block 0 can start?
-3. Write one expression for the total bytes `mmap` must request.
-
-🤔 Do you round the offset or the absolute address? Why does it matter?
-
-<!-- Pair exercise, ~3 minutes.
-Answers: 512 * 6 = 3072; 20 + 3072 = 3092 -> round up to 3104; total = 3104 + 512 * 16384 = 8,391,712.
-mmap's base is page-aligned, so rounding the offset and rounding the absolute address agree HERE;
-pool_blocks() rounds the absolute address so it stays correct for any base.
-create and destroy must use the same total: munmap(p, total) with a different length can leave a page mapped. -->
 
 ---
 
@@ -785,27 +734,26 @@ create and destroy must use the same total: munmap(p, total) with a different le
 
 ```c
 KVPool *kv_pool_create(size_t block_size, size_t nblocks) {
-    size_t meta  = nblocks * (sizeof(uint32_t) + sizeof(uint16_t));
-    size_t first = (offsetof(KVPool, data) + meta + 15) & ~(size_t)15;
-    size_t total = first + nblocks * block_size;   /* destroy: same value */
+    block_size = (block_size + 15) & ~(size_t)15;          /* keep blocks aligned */
+    size_t total = sizeof(KVPool) + nblocks * block_size;  /* destroy: same value */
 
     KVPool *p = mmap(NULL, total, PROT_READ | PROT_WRITE,
                      MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (p == MAP_FAILED) return NULL;
-    p->block_size = block_size;  p->nblocks = nblocks;  p->free_head = 0;
+    p->block_size = block_size;  p->nblocks = nblocks;  p->nfree = nblocks;
 
-    uint32_t *nf = pool_next_free(p);
-    for (size_t i = 0; i + 1 < nblocks; i++) nf[i] = i + 1;  /* 0→1→2→… */
-    nf[nblocks - 1] = UINT32_MAX;                            /* …→END   */
-    memset(pool_refcount(p), 0, nblocks * sizeof(uint16_t));
+    for (size_t i = 0; i + 1 < nblocks; i++)                /* 0 → 1 → 2 → …  */
+        ((FreeBlock *)(p->data + i * block_size))->next =
+            (FreeBlock *)(p->data + (i + 1) * block_size);
+    ((FreeBlock *)(p->data + (nblocks - 1) * block_size))->next = NULL;
+    p->free_head = (FreeBlock *)p->data;                    /* block 0 */
     return p;
 }
 ```
 
 One region. `kv_pool_destroy` recomputes the same `total` for its one `munmap`.
 
-<!-- Lab adds: reject nblocks == 0 / block_size == 0, round block_size up to 16.
-destroy: total = (pool_blocks(p) - (char *)p) + nblocks * block_size. -->
+<!-- Lab adds: reject nblocks == 0 / block_size == 0. -->
 
 ---
 
@@ -813,35 +761,74 @@ destroy: total = (pool_blocks(p) - (char *)p) + nblocks * block_size. -->
 
 ```c
 void *kv_block_alloc(KVPool *p) {
-    if (p->free_head == UINT32_MAX) return NULL;     /* pool exhausted */
-    uint32_t i = p->free_head;
-    p->free_head = pool_next_free(p)[i];             /* pop */
-    pool_refcount(p)[i] = 1;
-    return pool_blocks(p) + (size_t)i * p->block_size;
+    FreeBlock *b = p->free_head;
+    if (b == NULL) return NULL;          /* pool exhausted */
+    p->free_head = b->next;              /* pop */
+    p->nfree--;
+    return b;                            /* caller may now overwrite b->next */
 }
 
-void kv_block_free(KVPool *p, void *ptr) {           /* validation: next slide */
-    uint32_t i = ((char *)ptr - pool_blocks(p)) / p->block_size;
-    uint16_t *rc = pool_refcount(p);
-    if (rc[i] > 1) { rc[i]--; return; }              /* still shared */
-    rc[i] = 0;
-    pool_next_free(p)[i] = p->free_head;             /* push */
-    p->free_head = i;
+void kv_block_free(KVPool *p, void *ptr) {   /* validation: see "Trust No Pointer" */
+    FreeBlock *b = ptr;
+    b->next = p->free_head;              /* push */
+    p->free_head = b;
+    p->nfree++;
 }
 ```
 
-No splitting. No coalescing. No searching. Fixed sizes bought us all three.
+No size header. No splitting. No coalescing. No searching. Fixed sizes bought us all four.
+
+---
+
+# 📦 Act 10: A Request Takes `n` Blocks
+
+A request needs `n` blocks at once: its prompt's KV, then more as it generates.
+
+```c
+int kv_blocks_alloc(KVPool *p, size_t n, void *out[]) {
+    if (n > p->nfree) return -1;         /* all or nothing: take none */
+    for (size_t i = 0; i < n; i++)
+        out[i] = kv_block_alloc(p);
+    return 0;
+}
+
+void kv_blocks_free(KVPool *p, size_t n, void *blks[]) {
+    for (size_t i = 0; i < n; i++)
+        kv_block_free(p, blks[i]);
+}
+```
+
+🤔 Why check `nfree` first instead of popping until `kv_block_alloc` returns `NULL`?
+
+<!-- Otherwise a failed request leaves k half-taken blocks that must be pushed back. -->
+
+---
+
+# ✏️ Act 10: Paper Exercise — Trace the List
+
+`block_size = 16384`, `nblocks = 4`, blocks `b0 b1 b2 b3`. Fresh pool: `free_head → b0 → b1 → b2 → b3 → NULL`.
+
+1. `kv_blocks_alloc(p, 3, out)`. What is in `out`? Where does `free_head` point?
+2. `kv_block_free(p, out[0])`, then `kv_block_free(p, out[2])`. Draw the list.
+3. `kv_blocks_alloc(p, 3, out)`. What does it return, and what changed?
+4. How many bytes does `mmap` request for `nblocks = 512`?
+
+<!-- Pair exercise, ~3 minutes.
+1. out = {b0, b1, b2}; free_head -> b3 -> NULL.
+2. push b0: b0 -> b3; push b2: free_head -> b2 -> b0 -> b3 -> NULL. LIFO.
+3. nfree = 3, so it succeeds: out = {b2, b0, b3}; free_head = NULL.
+4. 32 + 512 * 16384 = 8,388,640 bytes. -->
 
 ---
 
 # 🛡️ Act 10: Defensive Allocators — Trust No Pointer
 
 `kv_block_free` gets a raw pointer: a stack address? the middle of a block? another pool's?
-🤔 Which checks, in what order?
+🤔 Which checks, in what order? (A bad push corrupts the whole list.)
 
 ```c
 void kv_block_free(KVPool *p, void *ptr) {
-    char *base = pool_blocks(p);
+    char *base = p->data;
     char *end  = base + p->nblocks * p->block_size;
     /* 1. inside the block region at all?          */
     if ((char *)ptr < base || (char *)ptr >= end) {
@@ -851,7 +838,7 @@ void kv_block_free(KVPool *p, void *ptr) {
     if (((char *)ptr - base) % p->block_size != 0) {
         fprintf(stderr, "kv_block_free: misaligned pointer\n"); return;
     }
-    /* 3. only now compute the index and proceed   */
+    /* 3. only now push it onto the free list      */
     ...
 }
 ```
@@ -872,13 +859,15 @@ Two agents, same system prompt → same KV prefix.
 
 ![w:900](images/w6-refcount-share.svg)
 
+Each block needs a **reference count**. 🤔 Where can it live? Not inside the block: an allocated block belongs to the caller.
+So: a side array `uint16_t rc[nblocks]` in the same `mmap`, after the last block (lab bonus B2).
+
 ```c
-void kv_block_share(KVPool *p, void *ptr) {
-    pool_refcount(p)[block_index(p, ptr)]++;
-}
+void kv_block_share(KVPool *p, void *ptr) { rc[block_index(p, ptr)]++; }
+/* free: rc--, and push onto the free list only when rc reaches 0 */
 ```
 
-**Share the immutable, copy on mutation.** (`block_index` is the pointer → index line from `kv_block_free`.)
+**Share the immutable, copy on mutation.** (`block_index` = `(ptr - p->data) / p->block_size`.)
 
 🤔 But who decides that a block is being *mutated*? Who stops the write?
 
@@ -936,11 +925,12 @@ Copy-on-write is a **design pattern**, not kernel trivia: share what is immutabl
 # 🏟️ Act 10: The Full Request Lifetime
 
 ```
-request starts →  arena_create()             (variable-size metadata)
-                  kv_block_alloc() × N        (fixed-size KV blocks)
+request starts →  arena_create()              (variable-size metadata)
+                  kv_blocks_alloc(p, n, kv)   (n fixed-size KV blocks, or none)
 request runs   →  arena_alloc() bumps along; blocks fill up
-request ends   →  arena_destroy()             — one free, metadata gone
-                  kv_block_free() × N          — blocks return to the pool
+                  kv_block_alloc() when the last block is full
+request ends   →  arena_destroy()              — one free, metadata gone
+                  kv_blocks_free(p, n, kv)    — blocks pushed back on the list
 ```
 
 Metadata leaks are impossible (arena). KV memory never touches `malloc` (pool). Timeout/crash cleanup is the same two lines in a loop.
@@ -955,7 +945,7 @@ The shape of real serving engines, and this week's lab: the first brick of your 
 | any size, any time | one size per pool |
 | pays per allocation (search, syscall risk) | O(1) pop/push |
 | external fragmentation | none between blocks; internal if blocks oversized |
-| no sharing | refcounted sharing |
+| no sharing | sharing: add a refcount per block |
 | cleanup scattered | one `munmap` |
 
 Real engines run **several** pools (size classes, Act 6) and fall back to `mmap` for odd sizes.
@@ -1006,10 +996,11 @@ Take-home mini-project and **Part 1 of the final project's memory subsystem**. F
 
 ```c
 KVPool *kv_pool_create(size_t block_size, size_t nblocks);
-void   *kv_block_alloc(KVPool *pool);          /* NULL when exhausted */
-void    kv_block_free(KVPool *pool, void *ptr);
-void    kv_block_share(KVPool *pool, void *ptr);
-void    kv_pool_destroy(KVPool *pool);          /* exactly one munmap */
+void   *kv_block_alloc(KVPool *pool);                         /* NULL when exhausted */
+void    kv_block_free(KVPool *pool, void *blk);
+int     kv_blocks_alloc(KVPool *pool, size_t n, void *out[]); /* n blocks or none */
+void    kv_blocks_free(KVPool *pool, size_t n, void *blks[]);
+void    kv_pool_destroy(KVPool *pool);                        /* exactly one munmap */
 
 Arena *arena_create(size_t cap);
 void  *arena_alloc(Arena *a, size_t size);      /* 16-byte aligned */
@@ -1026,12 +1017,12 @@ The code from Acts 9–10, written, tested and benchmarked by you. No new ideas 
 - pool internals: **exactly one `mmap`**, zero `malloc` calls in `kvpool.c`;
 - O(1) alloc/free; 16-byte aligned blocks; Valgrind-clean test suite;
 - benchmark against libc `malloc` (time + peak RSS) and write it up;
-- bonus: double-free detection, COW-style cloning, `pthread_mutex_t` teaser.
+- bonus: double-free detection, refcounted sharing + cloning, `pthread_mutex_t` teaser.
 
 The grader's first commands:
 
 ```bash
-grep -n "malloc\|calloc\|realloc\|free(" kvpool.c   # must find nothing
+grep -nE '\b(malloc|calloc|realloc|free)\(' kvpool.c   # must find nothing
 valgrind --leak-check=full ./test_kvpool            # must be silent
 ```
 
@@ -1238,26 +1229,26 @@ When memory runs out, the OOM killer picks by score (tune via `/proc/<pid>/oom_s
 
 ---
 
-# 📎 FM 11: The Single-Region Pool Pattern (Lab 6 Reference)
+# 📎 FM 11: The Fixed-Size Pool Pattern (Lab 6 Reference)
 
 ```c
+typedef struct FreeBlock { struct FreeBlock *next; } FreeBlock;
 typedef struct {
-    size_t   block_size;
-    size_t   nblocks;
-    uint32_t free_head;
-    char     data[];   /* [ next_free[] ][ refcount[] ][ pad ][ blocks... ] */
+    size_t     block_size, nblocks, nfree;
+    FreeBlock *free_head;
+    char       data[];   /* [ block 0 ][ block 1 ] ... */
 } KVPool;
 ```
 
 | Quantity | Formula |
 | --- | --- |
-| `offsetof(KVPool, data)` | 20 on x86-64 (`sizeof(KVPool)` is 24: don't confuse them) |
-| free list offset | `p->data` |
-| refcount offset | `p->data + nblocks * sizeof(uint32_t)` |
-| first block | align up to 16: `(addr + 15) & ~15` (absolute address!) |
-| block `i` | `pool_blocks(p) + i * block_size` |
-| index from pointer | `(ptr - pool_blocks(p)) / block_size` |
-| total for `mmap` / `munmap` | `(pool_blocks(p) - (char *)p) + nblocks * block_size` |
+| `offsetof(KVPool, data)` | 32 on x86-64 (= `sizeof(KVPool)`) |
+| block `i` | `p->data + i * block_size` |
+| index from pointer | `((char *)ptr - p->data) / block_size` (validate first!) |
+| valid block pointer | inside `[p->data, p->data + nblocks * block_size)` and offset `% block_size == 0` |
+| total for `mmap` / `munmap` | `sizeof(KVPool) + nblocks * block_size` |
+| alloc (pop) | `b = free_head; free_head = b->next; nfree--` |
+| free (push) | `b->next = free_head; free_head = b; nfree++` |
 
-Rules: flexible array member last; one `mmap`/one `munmap` with the **same** length; `UINT32_MAX` = end
-of free list; refcount `> 1` means "free just decrements" (COW sharing).
+Rules: flexible array member last; one `mmap`/one `munmap` with the **same** length; `block_size` a multiple of 16
+(holds `next`, keeps alignment); `NULL` = end of free list; `kv_blocks_alloc` checks `nfree` first (all or nothing).

@@ -85,9 +85,9 @@ Use it as the center's **request queue** (`queue_try_push` → `BUSY` when full)
 
 ## 🧠 Task 2: The Choreographer and the Captain (25%)
 
-- **Center:** a pool of planner threads pops requests, allocates a request arena from the
-  Lab 6 pool (pool size is a command-line option), calls `plan_section`, replies with
-  `PLAN`, and releases the arena. A full queue replies `BUSY <retry_ms>`. A semaphore
+- **Center:** a pool of planner threads pops requests, takes the request's KV blocks from the
+  Lab 6 pool with `kv_blocks_alloc` (pool size is a command-line option) plus a request arena,
+  calls `plan_section`, replies with `PLAN`, and gives both back. A full queue replies `BUSY <retry_ms>`. A semaphore
   limits how many planner calls run at once (`--max-inflight`).
 - **Leader:** on `ASSIGN` and `THEME`, sends `PLAN_REQ <req_id> <section> <n_followers> <style_seed>`, waits for `PLAN`, runs the
   **validator** (speed ≤ 2 cells per beat, no two drones in a cell, inside the zone),

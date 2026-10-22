@@ -75,7 +75,7 @@ troupe? That question is the heart of this project, and it gets harder every pha
 |---|---|
 | fork / exec / wait, orphans (Weeks 4-5) | Center launches captains; a dead captain must be noticed and its troupe rescued |
 | Pipes (Week 5) | Phase 1 links |
-| Memory pools (Week 6, Lab 6) | The choreographer gives every planning request a KV arena |
+| Memory pools (Week 6, Lab 6) | The choreographer gives every planning request its KV blocks from the pool and an arena |
 | Threads, mutexes, condition variables, semaphores, barriers | Performers in lockstep, task and request queues, thread pool |
 | Deadlock, livelock, starvation | Two performers swapping places, full queues, retry storms |
 | Shared memory, `mmap` (Week 12) | The shared stage, the broadcast booth as a separate process |
@@ -222,8 +222,8 @@ frames. It must never block the center.
 
 The center forks one captain per zone over pipes (your Lab 4 code, reused). Performers
 are threads inside their captain, moving in lockstep one beat at a time. The center's
-choreographer is a thread pool behind a bounded request queue, with a Lab 6 arena per
-request. The center owns the stage and enforces "one drone per cell" with an occupancy
+choreographer is a thread pool behind a bounded request queue, with Lab 6 KV blocks and an
+arena per request. The center owns the stage and enforces "one drone per cell" with an occupancy
 grid. Your job: get a hundred dancers moving without two colliding or a whole troupe
 freezing (deadlock), and make the center notice and restart a dead captain.
 
