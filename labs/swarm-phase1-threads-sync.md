@@ -2,7 +2,7 @@
 
 **BIL 322 System Programming — Final Project, Phase 1**
 **Duration:** 1 week
-**Project:** [19 Mayıs Drone Show](../projects/project3-drone-show-19-mayis.md)
+**Project:** [Autonomous Drone Swarm Choreographers](../projects/project3-drone-swarm-choreographers.md)
 **Submission:** GitHub Classroom (repository) + Google Classroom link
 
 > **Status: DRAFT.** Details, numbers, and the skeleton code are finalized the
@@ -12,12 +12,14 @@
 
 ## 🎯 Context
 
-The show has a center, leaders, and followers. In this phase everything runs on one
+*Rehearsal, one control booth.*
+
+The show has a center (the Artistic Director), leaders (Dance Captains), and followers (Performers). In this phase everything runs on one
 machine and the pieces talk the way you have already learned:
 
 - the **center** forks **leader processes** and talks to them over **pipes** (Labs 4 and 5),
 - each leader runs **follower threads** that move in lockstep, one **beat** at a time,
-- the center's **inference service** is a thread pool behind a bounded request queue, and
+- the center's **choreographer** is a thread pool behind a bounded request queue, and
   every request gets memory from your **Lab 6 pool**.
 
 This is the thread-and-synchronization half of the project: queues, locks, condition
@@ -58,7 +60,7 @@ receive code against **file descriptors** so Phase 3 can swap pipes for sockets.
 
 ---
 
-## 🛠️ Task 1: The Bounded Queue (25%)
+## 🛠️ Task 1: The Bounded Queue (20%)
 
 Implement `queue.c` with this interface (given in `queue.h`):
 
@@ -81,18 +83,18 @@ Rules:
 
 Use it as the center's **request queue** (`queue_try_push` → `BUSY` when full).
 
-## 🧠 Task 2: The Inference Service and the Leader Agent (25%)
+## 🧠 Task 2: The Choreographer and the Captain (25%)
 
 - **Center:** a pool of planner threads pops requests, allocates a request arena from the
   Lab 6 pool (pool size is a command-line option), calls `plan_section`, replies with
   `PLAN`, and releases the arena. A full queue replies `BUSY <retry_ms>`. A semaphore
   limits how many planner calls run at once (`--max-inflight`).
-- **Leader:** on `ASSIGN` and `THEME`, sends `PLAN_REQ`, waits for `PLAN`, runs the
+- **Leader:** on `ASSIGN` and `THEME`, sends `PLAN_REQ <req_id> <section> <n_followers> <style_seed>`, waits for `PLAN`, runs the
   **validator** (speed ≤ 2 cells per beat, no two drones in a cell, inside the zone),
   and asks again with a new `style_seed` if the plan is invalid. After `BUSY`, it retries
   with a **randomized** delay (not a fixed one — see the livelock slide). Then it sends `READY`.
 
-## 🥁 Task 3: Followers in Lockstep and the Occupancy Grid (30%)
+## 🥁 Task 3: Performers in Lockstep and the Occupancy Grid (25%)
 
 - The center sends the beat clock (a local timer thread for now; the tick length is a
   command-line option, `0` for tests). Each follower thread moves toward its keyframe for
@@ -117,14 +119,27 @@ followers exchange cells, locking both rows. With `--swap` enabled, the program 
 2. Name the Coffman condition you will break, and fix it with a lock ordering.
 3. Explain in the report why your fix cannot create a *livelock*.
 
-## 📊 Task 5: Tests and Report (10%)
+## 🔋 Task 5: Captain Down (10%)
+
+A captain's battery dies mid-show (`--battery N` makes it exit after N beats, as if it
+crashed). The performers are threads inside the captain, so they die with it.
+
+1. The center must **notice within one second** — through `SIGCHLD`/`waitpid` and EOF on
+   the pipe, not by polling — and print which zone went dark.
+2. The center **restarts** a captain for that zone, which resumes from the current beat
+   (re-send `ASSIGN` and `THEME`, request a new plan from the current beat).
+3. The cells the dead performers occupied must be freed in the occupancy grid.
+4. In the report, say what would be different if the performers were *processes*. (Phase 3
+   asks you to build exactly that.)
+
+## 📊 Task 6: Tests and Report (10%)
 
 - `make test` runs headless: queue unit tests (order, blocking, close), a 4-leader run of the
   short score whose performance score must reach the given threshold with **zero safety
-  violations**, and a clean-shutdown test.
+  violations**, a captain-down test, and a clean-shutdown test.
 - Run once under ThreadSanitizer (`-fsanitize=thread`) and once under Valgrind.
 - `REPORT.md`: architecture sketch, what each mutex protects, lock ordering, the
-  deadlock write-up, benchmark table, AI assistance.
+  deadlock write-up, captain-down handling, benchmark table, AI assistance.
 
 ---
 

@@ -1,8 +1,8 @@
-# Swarm Phase 2: Shared Stage and an Independent Viewer
+# Swarm Phase 2: Shared Stage and an Independent Broadcast Booth
 
 **BIL 322 System Programming — Final Project, Phase 2**
 **Duration:** 1 week
-**Project:** [19 Mayıs Drone Show](../projects/project3-drone-show-19-mayis.md)
+**Project:** [Autonomous Drone Swarm Choreographers](../projects/project3-drone-swarm-choreographers.md)
 **Submission:** GitHub Classroom (repository) + Google Classroom link
 
 > **Status: DRAFT.** Details, numbers, and the skeleton code are finalized the
@@ -11,6 +11,8 @@
 ---
 
 ## 🎯 Context
+
+*Dress rehearsal, a shared stage.*
 
 In Phase 1 the center owned the stage and every move was reported to it. That makes the
 center a bottleneck, and it ties the GUI to the center's process.
@@ -98,7 +100,9 @@ typedef struct {
 
 - Headless run with 4 leaders × 16 followers performs the short score with zero safety violations.
 - Collision test: all followers are told to enter the same 4 cells; no cell is ever shared.
-- Kill-a-leader test (robust mutex), slow-viewer test.
+- Kill-a-leader test (robust mutex), slow-viewer test. When a captain dies, the center releases that
+  captain's cells in the shared stage (and restarts it, as in Phase 1); a test shows no cell stays
+  occupied by a dead drone.
 - Run under ThreadSanitizer and Valgrind. Use `ls /dev/shm` to prove nothing is leaked after a
   normal exit and after `SIGINT`.
 - `REPORT.md`: the shared layout, who writes what, the collision rule, the seqlock-style read,
