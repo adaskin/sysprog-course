@@ -1,0 +1,248 @@
+# Lab 7: Worker Agents as Threads
+
+**BIL 322 System Programming — Week 7 Lab**
+**Duration:** 1 week (due next Thursday's lab session)
+**Submission:** GitHub Classroom (repository) + Google Classroom link
+
+> **Status: DRAFT.** Numbers and the provided files are finalized when the lab is assigned.
+
+---
+
+## 🎯 Context: From Worker Processes to Worker Threads
+
+In Weeks 4-5 your orchestrator launched each worker agent as a **process** with `fork` and
+`exec`. Week 6 showed the upside: a leaking or crashing agent dies alone. This week asks the
+opposite question: what if the workers live **in the same process**, as threads?
+
+Threads are cheaper to create and can share data with nothing more than a pointer. They can
+also corrupt each other's data with nothing more than a pointer. This lab is about both
+halves:
+
+1. **The good part:** many threads working on shards of one job. Speedup.
+2. **The bad part:** many threads touching one variable. Races.
+
+**Synchronization is not part of this lab.** You will *see* the races, *measure* them, and fix
+the ones that can be fixed **without locks**, by giving each thread its own data. Mutexes and
+condition variables arrive in next week's lecture and in Phase 1 of the final project.
+
+**This lab is the warm-up for the final project.** In Phase 1 of the
+[Autonomous Drone Swarm Choreographers](../projects/project3-drone-swarm-choreographers.md)
+project, the performers are threads inside their captain. The bonus task previews that.
+
+---
+
+## 📚 Learning Objectives
+
+By the end of this lab you will be able to:
+
+1. Create, join, and detach POSIX threads, and pass arguments to them **correctly**.
+2. Return results from threads without global variables.
+3. Split a job into shards, run it in parallel, and measure the speedup.
+4. Compare the cost of creating processes and threads.
+5. Recognize a **race condition**, explain it as an interleaving of load, add, and store, and
+   detect it with ThreadSanitizer.
+6. Eliminate a race by **partitioning data** instead of locking.
+7. Replace thread-unsafe library functions with their reentrant versions.
+
+## 🧰 Prerequisites
+
+- Week 7 lectures (7a threads intro, 7b threads II).
+- Lab 4's `wordcount` agent (you will build a threaded version).
+- `gcc -pthread`, `-fsanitize=thread`, Valgrind.
+- [Secure C rules](secure-c-programming-rules-for-assignments.md).
+
+---
+
+## 🧵 Task 1: Agents as Threads (20%)
+
+Write `agents.c`. Each agent is a thread that "works" and reports a result.
+
+```c
+typedef struct {
+    int       id;
+    unsigned  seed;      /* per-agent seed for rand_r */
+    long      steps;     /* how much work to do        */
+    long      result;    /* filled in by the agent     */
+} agent_t;
+```
+
+**1a. The classic bug.** Create 8 threads in a loop and pass `&i` (the address of the loop
+variable) as the argument. Each thread prints its id. Run it ten times. Copy the output into
+your report and explain what you see, using the "passing arguments" slide from lecture.
+
+**1b. The fix.** Give every thread its own `agent_t` (an array in `main`, or one `malloc` per
+agent). Each agent computes a result (for example the sum of `steps` values from
+`rand_r(&seed) % 100`) and stores it in its own struct. `main` joins all agents and prints the
+total. The total must be the same on every run, for the same seeds.
+
+**1c. Return values and detaching.** Do the same with results returned through
+`pthread_exit`/`pthread_join` (a heap-allocated result you free in `main`). Then add a
+`--detach` option that detaches the agents instead; explain in the report why `main` can no
+longer collect results this way and what it must do before it exits.
+
+## ⚡ Task 2: Sharded Token Count (30%)
+
+Write `tokencount.c`, a multithreaded version of Lab 4's `wordcount` agent:
+
+```text
+./tokencount <file> <nthreads>
+```
+
+- Read the whole file into memory (`read` or `mmap`).
+- Split it into `nthreads` shards. **Shard boundaries must not cut a word in half:** move each
+  boundary forward to the next whitespace.
+- Each thread counts the words in its shard and writes the count into **its own** slot in an
+  array of structs. Threads never write to shared variables.
+- `main` joins the threads, sums the slots, and prints the total.
+- The result must match `wc -w <file>` for any file and any `nthreads` from 1 to 64,
+  including empty files and files with one huge line.
+
+**Benchmark.** Run on the provided 200 MB input (`make data`) with 1, 2, 4, 8, and 16 threads.
+Report wall-clock time (`clock_gettime(CLOCK_MONOTONIC, ...)`) as a table and as speedup over
+1 thread. Explain the curve: where does it flatten and why? Relate it to the number of cores
+(`nproc`), memory bandwidth, and **Amdahl's law** (what part of your program is serial?).
+
+**Processes vs. threads.** Add `creation_bench.c`: time creating and joining 10,000 threads that
+return immediately, and 10,000 processes (`fork` + `_exit` + `waitpid`). Report both, and say what
+that number means for an orchestrator that launches a worker per tiny task.
+
+## 💥 Task 3: Races, Observed and Measured (25%)
+
+The provided `race.c` has two bugs on purpose:
+
+```c
+/* race.c — given. Do not "fix" these in this file; copy to race_fixed.c. */
+long sum = 0;                        /* shared by every thread          */
+long results[MAX_AGENTS * 1000];
+int  n_done = 0;                     /* shared by every thread          */
+
+void *agent(void *arg) {
+    long steps = *(long *)arg;
+    for (long i = 0; i < steps; i++) {
+        sum += 1;                    /* bug 1: lost updates             */
+        results[n_done] = i;         /* bug 2: two agents, same slot    */
+        n_done++;
+    }
+    return NULL;
+}
+```
+
+1. **Observe.** Run with 1, 2, 4, and 8 threads, each doing 1,000,000 steps. Run each setting
+   20 times. For `sum` and `n_done`, record the minimum, maximum, and number of distinct
+   values. Put the table in your report. The single-thread row must be exact.
+2. **Explain.** Draw the interleaving of two threads that loses one increment (load, add,
+   store). Why does the loss get *worse* with more threads? Why does `volatile` not help?
+   Why did the 1-thread run never fail?
+3. **Detect.** Build with `-fsanitize=thread -g` and run once. Paste the first race report and
+   explain each line (the two accesses, the two threads, where they were created).
+4. **Fix without locks.** In `race_fixed.c`, give each thread its own counter and its own range
+   of the results array (thread `t` writes only `results[t*steps .. (t+1)*steps - 1]`). After
+   joining, `main` computes the total. Verify exactness over 20 runs and a clean TSan run.
+5. **Think ahead.** In two or three sentences: when would partitioning *not* be possible (for
+   example, a shared work queue that every agent pops from)? That is next week.
+
+## 🔤 Task 4: Thread-Unsafe Functions (10%)
+
+`strtok` keeps its position in a hidden static variable.
+
+1. Write `tok_race.c`: two threads tokenize two *different* strings with `strtok` in a loop,
+   comparing their token counts to the expected values. Show that it fails sometimes.
+2. Fix it with `strtok_r`. Show that it never fails over 100 runs.
+3. Do the same for `rand()` versus `rand_r()` in one paragraph: what hidden state is shared,
+   and what do you pass instead?
+
+## 📊 Task 5: Tests, Makefile, Report (15%)
+
+- `make` builds everything with `-Wall -Wextra -pthread`; no warnings.
+- `make test` checks: Task 1 totals are identical over 10 runs; `tokencount` matches `wc -w` on
+  the test files and thread counts in the provided `tests/` folder; `race_fixed` is exact.
+- `make tsan` builds the Task 2 and Task 3 fixed programs with ThreadSanitizer; the run is clean.
+- Valgrind (`--leak-check=full`) is clean on Tasks 1 and 2.
+- `REPORT.md`: the Task 1 output and explanation, the benchmark tables and Amdahl discussion,
+  the race table and diagrams, the TSan excerpt, AI assistance.
+
+---
+
+## 🚁 Bonus: A Swarm Without Locks (up to +10%)
+
+A tiny preview of the project's Phase 1. Write `swarm.c`:
+
+- A 20 × 10 grid. 12 performer threads, each with a position, start at distinct cells and take
+  200 random steps (one cell up, down, left, or right, staying inside the grid), pausing 1 ms
+  per step.
+- A separate printer thread (or `main`) draws the grid as ASCII every 50 ms.
+- **There is no locking.** Count a **collision** whenever a performer steps into a cell where
+  another performer already is. Run 10 times and report the collision counts.
+- Explain why this is a *check-then-act* race and why per-thread data cannot fix it (the grid is
+  inherently shared). Next week's mutexes will fix it, and Phase 1 will ask you to fix it at two
+  different lock granularities.
+
+## ✅ Assessment
+
+| Component | Weight |
+| --- | --- |
+| Task 1: agents as threads | 20% |
+| Task 2: sharded token count + benchmark | 30% |
+| Task 3: races observed, detected, fixed without locks | 25% |
+| Task 4: thread-unsafe functions | 10% |
+| Task 5: tests, Makefile, report | 15% |
+| Bonus | up to +10% |
+
+**Grader's checklist:**
+
+```bash
+make && make test
+make tsan && ./run_tsan.sh                                   # clean on the fixed programs
+valgrind --leak-check=full --error-exitcode=1 ./agents
+./tokencount tests/big.txt 7 && wc -w tests/big.txt          # same number
+grep -n "pthread_mutex\|sem_\|atomic\|volatile" *.c          # none in the fixed programs
+```
+
+Zero-tolerance items: passing `&i` to a thread in the final version, unjoined threads, data races
+in the "fixed" programs, locks or atomics in this lab (they are next week), a missing report.
+
+## 📬 Submission
+
+Push to your GitHub Classroom repository:
+
+```
+agents.c
+tokencount.c
+creation_bench.c
+race.c          (given — unchanged)
+race_fixed.c
+tok_race.c
+swarm.c         (optional bonus)
+Makefile
+tests/          (given, plus any of your own)
+REPORT.md
+```
+
+Then paste the repository link into Google Classroom.
+
+**AI policy reminder (from the syllabus):** you may use AI tools for explanation and debugging, but you
+must be able to explain *every line* you submit — especially the interleaving diagram. List any AI
+assistance in `REPORT.md`.
+
+---
+
+## ❓ FAQ
+
+**Q: Why are the race counts different on every machine?**
+Because the interleaving depends on the number of cores, the scheduler, and timing. That is
+the point: a bug that appears only sometimes is the hardest kind. Report your own numbers and your
+machine (`nproc`, CPU model).
+
+**Q: My 8-thread run is no faster than 4 threads.**
+Check `nproc`, and check whether your threads are mostly waiting on memory rather than computing.
+Explain what you found; a correct explanation of a flat curve earns the same credit as a steep one.
+
+**Q: Can I use a mutex just to make Task 3 exact?**
+Not in this lab; use partitioning. You will use mutexes next week and compare the cost.
+
+## 🔭 Where This Goes Next
+
+| Week | What we add to this code |
+| --- | --- |
+| 8 (lectures 8a/8b) | Mutexes, condition variables, and semaphores fix the races you could not partition away |
+| Phase 1 | The `swarm.c` bonus becomes the performers in lockstep with an occupancy grid, and your agents become the captain's followers |
