@@ -1,0 +1,17 @@
+# Generated data: never commit it (make data creates it in the lab)
+data/*
+!data/.gitkeep
+tests/long_line.txt
+
+# Build products
+agents
+agents_bug
+tokencount
+creation_bench
+gen_data
+race
+race_fixed
+tok_race
+swarm
+*_tsan
+*.o

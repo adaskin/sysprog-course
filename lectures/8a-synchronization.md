@@ -549,6 +549,19 @@ void *consumer(void *ptr) {
 
 ---
 
+### 🤖 Producer-Consumer in an Agent Pipeline
+
+```
+planner agent (producer) ──▶ [ task queue ] ──▶ worker agents (consumers)
+```
+
+- The planner generates tasks faster than workers finish them? 🛢️ `notfull` makes the planner **wait**: this is **backpressure**.
+- No tasks yet? Workers sleep on `notempty` instead of spinning 😴.
+- Bounded buffer = bounded memory: an unbounded queue is the agent version of a memory leak.
+- Always `while`, never `if`, around `pthread_cond_wait` (spurious wakeups, see below).
+
+---
+
 ### Design Considerations
 
 1. **Multiple Resources**:
@@ -602,6 +615,28 @@ int sem_init(sem_t *sem, int pshared, unsigned int value);
 - **Increment** (Post): `sem_post(&s)`  
   - "V" operation.  
 - **Destroy**: `sem_destroy(&s)` releases resources.
+
+---
+
+# 🤖 Semaphores as Rate Limits
+
+An API allows **5** concurrent requests. 20 agent threads want to call it:
+
+```c
+sem_t api_slots;
+sem_init(&api_slots, 0, 5);     // 5 permits: a counting semaphore
+
+void *agent(void *arg) {
+    sem_wait(&api_slots);       // 🎫 take a permit (blocks if all 5 are in use)
+    call_api(arg);              // at most 5 agents are in here
+    sem_post(&api_slots);       // 🔓 give it back
+    return NULL;
+}
+```
+
+- A **mutex** admits 1; a **counting semaphore** admits N. 🎟️
+- ⚠️ If `call_api` can fail, the permit must still be returned or the pool of permits leaks until every agent is stuck.
+- Here `sem_post` is the "return the ticket" operation, which is why semaphores need no owner.
 
 ---
 
