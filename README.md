@@ -106,20 +106,20 @@ Python or Java examples may occasionally be used for comparison, especially in n
 
 By the end of the course, students should be able to:
 
-1. Use C development tools such as `gcc`, `make`, Git, GDB, and Valgrind.
-2. Understand object files, linking, symbols, and program loading.
-3. Understand C memory layout, pointers, structs, alignment, and binary file I/O.
-4. Use Unix system calls for file I/O and process control.
-5. Implement simple shells or pipeline runners using `fork`, `exec`, `wait`, pipes, and redirection.
-6. Implement a simple memory allocator.
-7. Write multithreaded C programs using POSIX threads.
-8. Use synchronization primitives such as mutexes, condition variables, and semaphores.
-9. Understand race conditions, deadlock, livelock, and common concurrency bugs.
-10. Understand IPC mechanisms such as pipes, shared memory, `mmap`, and message queues.
-11. Write basic TCP/UDP socket programs in C.
-12. Understand signals and basic asynchronous event handling.
-13. Apply system-programming concepts to modern application domains such as data pipelines, worker systems, request servers, and simple AI-infrastructure-style projects.
-14. Work on a substantial system-programming project, possibly involving threads, IPC, sockets, signals, and optional GUI visualization.
+1. Application: Ability to use C development tools such as gcc, make, Git, GDB, Valgrind, and ThreadSanitizer.
+2. Comprehension: Ability to explain object files, static and dynamic linking, symbols, and program loading.
+3. Comprehension: Ability to explain C memory layout, pointers, structs, alignment, and binary file I/O.
+4. Application: Ability to use Unix system calls for file I/O, directory access, and process control.
+5. Application: Ability to design and implement simple shells or pipeline runners using fork, exec, wait, pipes, and redirection.
+6. Application: Ability to implement a simple memory allocator.
+7. Application: Ability to write concurrent, multithreaded C programs using POSIX threads.
+8. Application: Ability to apply synchronization primitives such as mutexes, condition variables, semaphores, and barriers to concrete problems.
+9. Analysis: Ability to analyze and distinguish race conditions, deadlock, livelock, and common concurrency bugs, and to diagnose them with tools such as ThreadSanitizer and GDB.
+10. Comprehension: Ability to explain and compare IPC mechanisms such as pipes, shared memory, mmap, and message queues.
+11. Application: Ability to write basic TCP socket programs in C and to explain how UDP differs.
+12. Application: Ability to handle signals safely with sigaction and to explain basic asynchronous event handling.
+13. Application / Synthesis: Ability to apply system-programming concepts to modern application domains such as data pipelines, worker systems, request servers, and simple AI-infrastructure-style projects.
+14. Synthesis / Evaluation: Ability to design, implement, and evaluate a substantial end-to-end system-programming project involving threads, IPC, sockets, and signals, with optional GUI visualization, justifying design choices with measurements.
 
 ---
 
