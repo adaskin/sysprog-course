@@ -104,7 +104,7 @@ Python or Java examples may occasionally be used for comparison, especially in n
 
 ## Learning Outcomes
 
-By the end of the course, students should be able to:
+By the end of the course, students should be able to have:
 
 1. Application: Ability to use C development tools such as gcc, make, Git, GDB, Valgrind, and ThreadSanitizer.
 2. Comprehension: Ability to explain object files, static and dynamic linking, symbols, and program loading.
