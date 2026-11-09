@@ -1,0 +1,18 @@
+# build products
+center
+leader
+swapstress
+gridbench
+center_tsan
+leader_tsan
+tests/test_protocol
+tests/test_planner
+tests/test_queue
+tests/test_queue_tsan
+*.o
+
+# logs written by the test script
+stderr.log
+queue.log
+swap.log
+vg.log

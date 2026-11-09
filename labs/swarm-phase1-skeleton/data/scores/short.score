@@ -1,0 +1,9 @@
+# short.score — 56 beats; used by `make test`.
+# stage W H | tempo BPM | image PATH | section NAME START END THEME MOOD (inclusive, contiguous)
+stage 64 36
+tempo 120
+image data/images/wave64x36.pgm
+
+section intro   0  15 dawn   calm
+section march  16  31 waves  energetic
+section finale 32  55 mosaic triumphant

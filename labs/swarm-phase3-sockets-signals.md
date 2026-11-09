@@ -64,7 +64,9 @@ Each process takes its peer addresses from the command line
 
 ## 🛠️ Task 1: Line-Framed Socket I/O (20%)
 
-Replace the pipe transport with a socket transport behind the same interface:
+Replace the pipe transport with a socket transport behind the same interface. Start from the
+Phase 1 `line_io.c` (`LineReader`, `send_line`, `send_all`), which already works on file descriptors
+and loops over short reads and writes:
 
 ```c
 int  conn_send_line(int fd, const char *line);       /* adds '\n', handles short writes   */
