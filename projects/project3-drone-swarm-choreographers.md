@@ -6,9 +6,10 @@
 **Duration:** 3 phases, about 1 week each (details of each phase are refined when it is assigned)
 **AI use:** Allowed, but must be disclosed and you must be able to explain all code
 
-> **Status: DRAFT.** Structure, protocol, and grading are stable. Each week, the
-> instructor may adjust details of the phase being assigned and release the
-> skeleton code with it.
+> **Status: Phase 1 is final** (the protocol of Section 3 is frozen, and the Phase 1 skeleton
+> is in [`labs/swarm-phase1-skeleton/`](../labs/swarm-phase1-skeleton/)). Phases 2 and 3 are
+> drafts: the instructor adjusts their details, and releases their skeleton code, in the week
+> each one is assigned.
 
 ---
 
@@ -107,19 +108,23 @@ troupe? That question is the heart of this project, and it gets harder every pha
 
 ### The stage, the clock, and the score
 
-- The sky is a top-down grid (default 128 × 72 cells). Every drone occupies one cell and
+- The sky is a top-down grid (64 × 36 cells in the given scores). Every drone occupies one cell and
   shows one color (0-15). **Each drone is a pixel**; in the finale the swarm is the picture.
 - Time is counted in **beats**. A **score** file (given) lists the sections:
 
 ```text
-# beat  section  theme     mood
-0       intro    dawn      calm
-32      march    waves     energetic
-64      finale   mosaic    triumphant
+stage 64 36
+tempo 120                                # beats per minute (tests run at tempo 0)
+image data/images/wave64x36.pgm          # the target picture of the finale
+section intro   0  15 dawn   calm        # section NAME START_BEAT END_BEAT THEME MOOD
+section march  16  31 waves  energetic
+section finale 32  55 mosaic triumphant
 ```
 
-  The theme `mosaic` means "form the target image" (each zone forms its part of it). The
-  other themes are movement formations (lines, circles, waves, ...).
+  The theme `mosaic` means "form the target image" (each zone forms its part of it); it is
+  always the **last** section. The other themes (`dawn`, `waves`, `hold`, ...) are movement
+  formations. Every formation starts and ends in the **home formation** of its zone, so
+  sections chain.
 - Between beats a performer may move **at most 2 cells**. No two drones may be in the same
   cell on the same beat. Both rules are checked by a given validator; a captain must not
   send a plan that breaks them.
@@ -140,9 +145,9 @@ rewrite.
 | Center | parent process | parent process | server process |
 | Leader | child process (`fork`/`exec`) | child process | client process (own socket) |
 | Follower | **thread** inside its captain | thread inside its captain | **separate process**, socket to its captain |
-| Viewer | window inside the center | **separate process**, reads shared memory | separate process, socket client |
+| Viewer | the stage drawn as ASCII in the center's terminal (`--ascii`) | **separate process**, reads shared memory (SDL, GTK, or Qt) | separate process, socket client |
 | Center ↔ leader | pipes | pipes + shared stage | TCP |
-| A captain dies... | its threads die with it; the center restarts the captain | same, and the dead captain's cells in the shared stage must be released | **performers survive as orphans** and must be rehomed |
+| A captain dies... | its threads die with it; the center restarts the captain (its performers start again at home) | same, and the dead captain's cells in the shared stage must be released | **performers survive as orphans** and must be rehomed |
 
 In Phase 3 *everything communicates through sockets* — center↔leader, leader↔performer,
 and viewer↔center. Performers become processes in Phase 3 precisely so that a captain's
@@ -151,10 +156,12 @@ running).
 
 ---
 
-## 3. The Protocol (Draft, Frozen Once Phase 1 Is Assigned)
+## 3. The Protocol (Frozen)
 
 One message per line, fields separated by single spaces, `\n` terminated, maximum 256
-bytes per line. Unknown messages are ignored and logged, never fatal.
+bytes per line. Unknown messages are ignored and logged, never fatal. A *malformed* known
+message (wrong field count, not a number, out of range) is rejected, logged, and never crashes
+the receiver; the given `protocol.c` already does this for you.
 
 ### Center → Leader
 
@@ -164,7 +171,7 @@ THEME <section> <start_beat> <end_beat> <theme> <mood> coarse direction for a se
 PLAN <req_id> <n>                                      followed by n keyframe lines
 BUSY <req_id> <retry_ms>                               the choreographer's queue is full
 ADOPT <follower_id>                                    take over an orphaned performer (Phase 3)
-BEAT <n>                                               the clock (Phase 3; earlier: local)
+BEAT <n>                                               the clock: "start beat n" (all phases)
 SHUTDOWN
 ```
 
@@ -174,9 +181,14 @@ SHUTDOWN
 HELLO <leader_id> <n_followers>
 PLAN_REQ <req_id> <section> <n_followers> <style_seed>  commission detailed choreography
 READY <leader_id> <section>                             positions for this section are loaded
-HEARTBEAT <leader_id>
+POS <leader_id> <beat> <follower> <x> <y> <color>       where a performer is after this beat
+ACK <leader_id> <beat>                                  all POS lines of this beat were sent
+HEARTBEAT <leader_id>                                   (Phase 3)
 DONE <leader_id> <section>
 ```
+
+`POS` and `ACK` let the center see the stage and **audit** it (collisions, speed) without
+trusting the captains; the center never sends `BEAT n+1` before it has the `ACK` for beat `n`.
 
 ### Keyframe line (inside `PLAN`, and also what a captain stores)
 
@@ -185,6 +197,9 @@ DONE <leader_id> <section>
 ```
 
 "At `beat`, performer `follower_idx` is at `(x, y)` showing `color`."
+
+A plan is **dense**: it has exactly one keyframe for every beat of the section and every
+performer (`n_followers × (end − start + 1)` lines), in beat order. The validator checks this.
 
 ### Leader ↔ Follower (Phase 3 only; in Phases 1-2 these are function calls and a barrier)
 
@@ -223,9 +238,12 @@ frames. It must never block the center.
 The center forks one captain per zone over pipes (your Lab 4 code, reused). Performers
 are threads inside their captain, moving in lockstep one beat at a time. The center's
 choreographer is a thread pool behind a bounded request queue, with Lab 6 KV blocks and an
-arena per request. The center owns the stage and enforces "one drone per cell" with an occupancy
-grid. Your job: get a hundred dancers moving without two colliding or a whole troupe
-freezing (deadlock), and make the center notice and restart a dead captain.
+arena per request. Each captain keeps an **occupancy grid** for its zone and its performers
+must claim a cell before they move into it; the center audits the whole stage from the
+captains' `POS` reports. Your job: get a hundred dancers moving without two colliding or a
+whole troupe freezing (deadlock), and make the center notice and restart a dead captain.
+The skeleton gives you the protocol, planner, validator, clock loop and tests; you build the
+queue, the planner pipeline, the grid, the performers and the restart.
 
 ### Phase 2 — Dress Rehearsal, a Shared Stage
 
@@ -264,11 +282,11 @@ typedef struct {
     unsigned char color;
 } Keyframe;
 
-/* Fill out[] with up to max keyframes that make n_followers drones perform
- * `theme` in `mood` inside `zone` from start_beat to end_beat. For theme "mosaic",
- * the keyframes place the drones on the pixels of the target image inside the zone.
- * style_seed makes different captains produce different (but valid) variations.
- * Returns the number of keyframes written, or -1.
+/* Fill out[] with the keyframes that make n_followers drones perform
+ * `theme` in `mood` inside `zone` from start_beat to end_beat: one per beat per drone
+ * (dense plan, beat-major). For theme "mosaic" the drones move onto the pixels of the target
+ * image inside the zone. style_seed makes different captains produce different (but valid)
+ * variations. Returns the number of keyframes written, or -1.
  * The default implementation sleeps for a simulated "thinking time" that grows with the
  * zone and section length, then returns a formation sequence chosen by theme and mood. */
 int plan_section(const Theme *theme, const Zone *zone, const Image *target,
@@ -289,12 +307,13 @@ function, or write a plan by hand and feed it through the protocol.
 - Follow the [secure C rules](../labs/secure-c-programming-rules-for-assignments.md).
 - No busy-waiting. Use condition variables, semaphores, barriers, or blocking I/O.
 - Valgrind (and ThreadSanitizer for Phases 1-2) must be clean on the headless test mode
-  (`--no-gui`). Every program must run without a display.
+  (Phase 1: `make test`, `make tsan`; later phases add `--no-gui`). Every program must run
+  without a display.
 - Every protocol parser must reject malformed and over-long lines without crashing.
 
 ---
 
-## 7. Grading (Draft)
+## 7. Grading
 
 | Phase | Weight |
 |---|---|
@@ -316,7 +335,7 @@ phase; correctness of the concurrency and fault handling is what is graded.
 |---|---|
 | Score and image loaders, `planner.h`, the stub choreographer | Transport layer, queues, stage, drones |
 | The plan validator (speed, collision, zone) | Captain and performer logic |
-| Starter SDL viewer | Booth changes for each phase |
+| Starter viewer (Phase 2) | Booth changes for each phase |
 | Test scores and a headless test harness | Your own tests and the report |
 
 You may reuse your Lab 4 orchestrator, Lab 5 pipes, and Lab 6 pool. Earlier years' drone
