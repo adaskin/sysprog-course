@@ -20,6 +20,10 @@ make bench           # one global lock vs per-row locks, 1..8 threads (Task 3)
 
 A wrong argument prints the usage line. The score files are in
 `data/scores/`, the target images in `data/images/` (small PGM files, in the repo).
+To see the show you are building, run `./center --score data/scores/show.score --followers 46
+--ascii 8` (the stage as text; 4 leaders x 46 followers draw a rainbow heart). The lab handout shows
+what it looks like when everything works.
+
 The program prints one line like
 
 ```

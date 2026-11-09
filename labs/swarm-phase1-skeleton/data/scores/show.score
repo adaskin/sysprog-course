@@ -1,0 +1,9 @@
+# show.score — the "demo" show: a rainbow heart. Needs --followers 46 (4 leaders x 46 = 184 drones;
+# the heart has 180 pixels, 44-46 in each zone):   ./center --score data/scores/show.score --followers 46
+stage 64 36
+tempo 120
+image data/images/heart64x36.pgm
+
+section intro   0  15 dawn   calm
+section march  16  31 waves  energetic
+section finale 32  55 mosaic triumphant
