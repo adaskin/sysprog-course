@@ -62,6 +62,11 @@ goes off-script. A student can type a message with `nc` to test a captain by han
 an LLM can be given the protocol text as its instructions. A protocol only machines can
 read is a protocol you can't debug on show night.
 
+![What the swarm does: home formation, waves, the mosaic forms, the final picture](../labs/images/swarm/swarm-show.png)
+
+*A Phase 1 run, drawn from the center's ASCII output: 4 captains with 46 performers each. The
+Phase 2 viewer draws the same thing in a real window.*
+
 You have one swarm, one battery budget, and the length of one song. The picture either
 forms by the final note, or it doesn't.
 

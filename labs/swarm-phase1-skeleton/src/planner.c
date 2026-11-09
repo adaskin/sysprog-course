@@ -20,14 +20,6 @@ static unsigned hash32(unsigned x) {
     return x;
 }
 
-static int sgn(int v) {
-    return (v > 0) - (v < 0);
-}
-
-static int clampi(int v, int lo, int hi) {
-    return v < lo ? lo : (v > hi ? hi : v);
-}
-
 static void simulate_thinking(int cells) {
     if (opts.think_ms <= 0) {
         return;
@@ -156,26 +148,64 @@ static int plan_mosaic(const Theme *t, const Zone *z, const Image *img, int n, K
         occ[(home[i].y - z->y0) * zw + (home[i].x - z->x0)] = i;
     }
     for (int b = 0; b < len; b++) {
+        /* Drones are interchangeable: if drone k is sitting on the goal of drone i, they swap goals
+         * (and colors), so k is done and i heads for k's old goal. This unblocks traffic jams. */
         for (int i = 0; i < n; i++) {
-            int dx = clampi(goal[i].x - pos[i].x, -MAX_SPEED, MAX_SPEED);
-            int dy = clampi(goal[i].y - pos[i].y, -MAX_SPEED, MAX_SPEED);
-            int cand[7][2] = {{dx, dy}, {dx, 0}, {0, dy}, {sgn(dx), sgn(dy)},
-                              {sgn(dx), 0}, {0, sgn(dy)}, {0, 0}};
-            for (int c = 0; c < 7; c++) {
-                int nx = pos[i].x + cand[c][0], ny = pos[i].y + cand[c][1];
-                if (nx < z->x0 || nx > z->x1 || ny < z->y0 || ny > z->y1) {
-                    continue;
-                }
-                int cell = (ny - z->y0) * zw + (nx - z->x0);
-                int own = (pos[i].y - z->y0) * zw + (pos[i].x - z->x0);
-                if (occ[cell] != -1 && cell != own) {
-                    continue;
-                }
-                occ[own] = -1;
-                occ[cell] = i;
-                pos[i] = (Pos){nx, ny};
-                break;
+            if (goal[i].x == pos[i].x && goal[i].y == pos[i].y) {
+                continue;
             }
+            int k = occ[(goal[i].y - z->y0) * zw + (goal[i].x - z->x0)];
+            if (k != -1 && k != i) {
+                Pos g = goal[i];
+                unsigned char c = color[i];
+                goal[i] = goal[k];
+                color[i] = color[k];
+                goal[k] = g;
+                color[k] = c;
+            }
+        }
+        /* Farthest drones move first, so the drones that are already home do not wall them off. */
+        int ord[MAX_FOLLOWERS], dist[MAX_FOLLOWERS];
+        for (int i = 0; i < n; i++) {
+            int ddx = abs(goal[i].x - pos[i].x), ddy = abs(goal[i].y - pos[i].y);
+            dist[i] = ddx > ddy ? ddx : ddy;
+            int a = i;
+            while (a > 0 && dist[ord[a - 1]] < dist[i]) {
+                ord[a] = ord[a - 1];
+                a--;
+            }
+            ord[a] = i;
+        }
+        for (int oi = 0; oi < n; oi++) {
+            int i = ord[oi];
+            /* best free cell within MAX_SPEED (smallest squared distance to the goal); stay if none is closer */
+            int own = (pos[i].y - z->y0) * zw + (pos[i].x - z->x0);
+            long best = (long)(goal[i].x - pos[i].x) * (goal[i].x - pos[i].x) +
+                        (long)(goal[i].y - pos[i].y) * (goal[i].y - pos[i].y);
+            int bx = pos[i].x, by = pos[i].y;
+            for (int ddy = -MAX_SPEED; ddy <= MAX_SPEED; ddy++) {
+                for (int ddx = -MAX_SPEED; ddx <= MAX_SPEED; ddx++) {
+                    int nx = pos[i].x + ddx, ny = pos[i].y + ddy;
+                    if (nx < z->x0 || nx > z->x1 || ny < z->y0 || ny > z->y1) {
+                        continue;
+                    }
+                    int cell = (ny - z->y0) * zw + (nx - z->x0);
+                    if (occ[cell] != -1) {
+                        continue;
+                    }
+                    long d = (long)(goal[i].x - nx) * (goal[i].x - nx) + (long)(goal[i].y - ny) * (goal[i].y - ny);
+                    if (d < best) {
+                        best = d;
+                        bx = nx;
+                        by = ny;
+                    }
+                }
+            }
+            occ[own] = -1;
+            occ[(by - z->y0) * zw + (bx - z->x0)] = i;
+            pos[i] = (Pos){bx, by};
+        }
+        for (int i = 0; i < n; i++) {
             Keyframe *k = &out[b * n + i];
             k->beat = t->start_beat + b;
             k->follower = i;

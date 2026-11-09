@@ -8,6 +8,25 @@
 
 ---
 
+## 🎬 What You Are Building
+
+This is the show your swarm performs at the end of the phase: 4 captains with 46 performers each,
+a short intro, a wave section, and then the finale, where every pixel of the target image gets a drone
+(`./center --score data/scores/show.score --followers 46 --ascii 1`). Four spare drones stay at home.
+
+![The swarm show: home, waves, the mosaic forms, the final picture](images/swarm/swarm-show.png)
+
+([animated version](images/swarm/swarm-show.gif))
+
+These pictures are drawn from the center's ASCII output by `labs/images/swarm/render.py`; in Phase 2
+the viewer becomes a real window (SDL, GTK, or Qt) that draws the same thing. In Task 5 you will make
+this happen: captain 1 runs out of battery in the middle of the waves, the center notices and restarts
+it, its new troupe starts again at home, and the picture still forms.
+
+![Captain down: the troupe restarts at home and the picture still forms](images/swarm/swarm-captain-down.png)
+
+---
+
 ## 🎯 Context
 
 *Rehearsal, one control booth.*
