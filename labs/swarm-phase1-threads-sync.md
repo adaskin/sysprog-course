@@ -93,6 +93,133 @@ audits the `POS` reports.
 
 ---
 
+## 🗺️ The Source Tree: How the Framework Fits Together
+
+Almost all of the code is given. You write the parts marked TODO in **four files**
+(`queue.c`, `grid.c`, `center.c`, `leader.c`), but you must understand the rest, because
+your code runs inside it. Read this section once before you open the files, then come back to
+it when you are lost.
+
+### The files, layer by layer
+
+```text
+                    ┌──────────────────────────────────────────────────┐
+ programs           │  center.c (one process)      leader.c (4 processes)│  ← your TODOs
+                    └───────┬──────────────────────────────┬───────────┘
+                            │ uses                         │ uses
+ your modules       queue.c (Task 1)                  queue.c, grid.c (Task 3, 4)
+                    kvpool (Lab 6 or stub)
+                            │                              │
+ given: the show    planner.c   validator.c   metrics.c    │
+ given: the wire    protocol.c   line_io.c                 │
+ given: basics      swarm.c  (types, score/image, zones)  compat.h (barrier on macOS)
+```
+
+| File | What it does | Who |
+|---|---|---|
+| `include/swarm.h`, `src/swarm.c` | The shared vocabulary: `Zone`, `Pos`, `Keyframe` ("at beat b, follower f is at (x, y) with color c"), `Theme`, `Score`, `Image`; loading score and image files; `zone_split` (cuts the stage into vertical strips, one per leader), `home_position` (where follower *i* starts), `log_msg`. | given |
+| `include/protocol.h`, `src/protocol.c` | Turns a text line into a `Msg` (`proto_parse`) and back (`proto_format`); the same for the keyframe lines inside a `PLAN`. The frozen message list from the project spec lives here. It never crashes on a bad line: it returns -1. | given |
+| `include/line_io.h`, `src/line_io.c` | Newline-framed I/O on a **file descriptor**: `lr_read_line` (buffered, handles partial reads and too-long lines), `send_line` and `send_all` (loop over short writes and `EINTR`). The only place that calls `read` and `write` on the pipes, so Phase 3 can swap pipes for sockets here. | given |
+| `src/planner.c`, `include/planner.h` | The "choreographer": `plan_section` makes a dense plan (one keyframe for every beat and follower) for a theme and a zone. Here it is a deterministic stub that sleeps to simulate a slow model, and `--flaky` makes some plans deliberately unsafe. It is thread-safe. | given |
+| `src/validator.c` | `validate_plan` checks a plan before anyone uses it: right count, colors, inside the zone, at most `MAX_SPEED` per beat, no two drones in one cell. | given |
+| `src/metrics.c` | The center's audit: `audit_collisions`, `audit_speed`, and `mosaic_accuracy` (how well the final picture matches the target). | given |
+| `include/kvpool.h`, `src/kvpool_stub.c` | The Lab 6 pool and arena. The stub exists only so the skeleton builds; if `src/kvpool.c` and `src/arena.c` exist, the Makefile uses yours instead. **Not thread-safe**: the center's workers share it. | stub given, yours optional |
+| `include/compat.h` | One line of portability: a barrier that also exists on macOS. | given |
+| `src/queue.c` | Bounded thread-safe queue (ring buffer, mutex, condition variables). Used by the center (the request queue) and by every leader (the job queue). | **Task 1** |
+| `src/grid.c` | The occupancy grid of one leader's zone: `grid_claim`, `grid_release`, `grid_owner`, `grid_swap`, with one lock or one lock per row. | **Tasks 3 and 4** |
+| `src/center.c` | The center process (Artistic Director). | given + **Tasks 2, 5** |
+| `src/leader.c` | The leader process (Dance Captain) with its follower threads. | given + **Tasks 2, 3** |
+| `tools/swapstress.c`, `tools/gridbench.c` | Stand-alone programs that hammer only `grid.c` (the deadlock demo of Task 4 and the benchmark of Task 3). | given |
+| `tests/` | `run_tests.sh` (what `make test` runs), `test_queue.c` (checks your queue alone), `test_protocol.c` and `test_planner.c` (check the given modules). Read `run_tests.sh` to see what is expected of you; add your own tests there (Task 6). | given |
+| `data/` | Scores (`short.score` for tests, `show.score` for the full show) and target images (small PGM files). | given |
+| `show.sh`, `tools/render.py` | The picture view of a run (see "See your show" below). | given |
+
+### Inside the center (`center.c`)
+
+The center is one process with many threads. Read the file in this order: the **state** block
+at the top, then `main`, then `reader_main`, then your TODOs.
+
+| Thread | Does | Shares with the others |
+|---|---|---|
+| **main** (clock loop) | For every beat: wait until every leader is `READY` for the section, send `BEAT b`, wait for every `ACK`, audit all positions, print the stage. | `st_mu` + `st_cv` |
+| **reader** (one per leader) | Reads that leader's pipe in a loop and dispatches each message: `PLAN_REQ` → `handle_plan_req` (**Task 2**), `READY`, `POS`, `ACK` update the shared state and broadcast `st_cv`. At EOF it calls `on_leader_exit` (**Task 5**). | `st_mu` |
+| **worker** (the planner pool) | `queue_pop` a `Request`, then `serve_request` (**Task 2**): take a semaphore slot and KV blocks, call the slow `plan_section`, send `PLAN`. | `req_queue`, `pool_mu`, `inflight` |
+
+The locks, and what each one protects:
+
+| Lock | Protects |
+|---|---|
+| `st_mu` (+ `st_cv`) | all show state: `ready_mask`, `acked`, `spos`/`scol` (positions), `sent_theme`, `leaders[].alive`, `cur_beat`, `shutting_down`. The clock loop waits on `st_cv` for "all ready" and "all acked". |
+| `leaders[l].wlock` | writes to leader *l*'s pipe, so lines from different threads never interleave. |
+| `pool_mu` | the Lab 6 KV pool (it has no lock of its own). |
+
+**Lock order: `wlock` first, then `st_mu`.** `mark_dead` follows it (the senders take `wlock` alone); so must any code you add that takes both.
+The `inc` (incarnation) number on a reader tells it whether it belongs to the current process
+of that leader or to a dead one, so a late line from a dead captain cannot corrupt the state of its
+replacement.
+
+### Inside a leader (`leader.c`)
+
+A leader is a separate process started by `spawn_leader` (`fork`, `dup2` onto stdin and stdout,
+`exec ./leader`). Its main thread reads stdin and creates the other threads when `ASSIGN` arrives.
+
+| Thread | Does | Hands over through |
+|---|---|---|
+| **main** | Reads the center's lines: `ASSIGN` (create grid, barrier and threads), `THEME` (push onto `job_queue`), `PLAN`/`BUSY` (put into the **mailbox**), `BEAT` (`publish_beat`), `SHUTDOWN`. | `job_queue`, `mailbox`, `beat_mu`/`beat_cv` |
+| **thinker** (**Task 2**) | Takes a `Theme` from `job_queue`, sends `PLAN_REQ`, waits in `mailbox_wait` for `PLAN` or `BUSY`, retries with random backoff, validates, calls `plan_store`, sends `READY`. | `job_queue`, `mailbox`, `plan_mu` |
+| **followers** (**Task 3**, one per drone) | Wait on `beat_cv` for the next beat, read their target with `plan_lookup`, and do release → barrier → claim → barrier. The one thread that gets `PTHREAD_BARRIER_SERIAL_THREAD` reports `POS` lines and `ACK`. | `beat_mu`/`beat_cv`, `barrier`, `grid`, `plan_mu`, `out_mu` |
+
+The shared pieces, each with its own lock: the **plan store** (`plans[]`, `plan_mu`: the
+thinker writes, the followers read), the **mailbox** (one slot, `mailbox.mu` + `cv`: main writes,
+the thinker waits), the **beat clock** (`cur_beat`, `beat_mu` + `beat_cv`: main writes, followers wait), the
+**grid** (its own locks, inside `grid.c`), and **stdout** (`out_mu`: every thread that sends a
+line goes through `send_msg`).
+
+### How a message travels: a plan request, end to end
+
+This is the path of one `PLAN_REQ`, through six files. Trace it once with `--ascii 1` and
+the log lines on stderr, and the whole design will make sense.
+
+1. **leader, thinker**: `send_msg` → `proto_format` → `send_line` (`line_io.c`) writes `PLAN_REQ ...` to stdout.
+2. **center, reader thread** of that leader: `lr_read_line` → `proto_parse` → `handle_plan_req`
+   builds a `Request` and `queue_try_push`es it on `req_queue` (full: `send_busy` instead).
+3. **center, a worker**: `queue_pop` → `serve_request`: `sem_wait(&inflight)`, take blocks from the
+   KV pool under `pool_mu`, call `plan_section` (`planner.c`), `send_plan` (a `PLAN` header and
+   one keyframe line per drone, written under `wlock`).
+4. **leader, main thread**: `proto_parse` → `read_plan_body` → `mailbox_put` wakes the thinker.
+5. **leader, thinker**: `validate_plan` (`validator.c`) → `plan_store` → `READY`.
+6. **center, clock loop**: `all_ready` is true, so it sends `BEAT b`; the followers move, report `POS`
+   and `ACK`, and `audit_collisions` / `audit_speed` (`metrics.c`) judge the result.
+
+### The life of a run
+
+1. `main` in `center.c` loads the score and image, creates the pool, the request queue and the
+   worker threads, then for each leader: `spawn_leader`, `send_assign`, `send_theme` (first section).
+2. Each leader replies `HELLO`, starts its thinker and follower threads, asks for its first plan,
+   and sends `READY` when it has one.
+3. The clock loop runs the beats (section above). At the first beat of a section, the center sends
+   the *next* section's `THEME`, so the thinkers can plan one section ahead while the drones dance.
+4. After the last beat the center computes the mosaic accuracy, sends `SHUTDOWN`, joins the readers,
+   and prints the `RESULT` line. Nothing may hang here (zero-tolerance list).
+5. If a leader dies in the middle (Task 5), its reader sees EOF and `on_leader_exit` runs: reap,
+   restart, resume from the next beat.
+
+### Where your tasks plug in
+
+| Task | You write | It is called from | You can test it alone with |
+|---|---|---|---|
+| 1 | `queue.c` | `center.c` (`req_queue`), `leader.c` (`job_queue`) | `tests/test_queue`, `make tsan` |
+| 2 | `handle_plan_req`, `serve_request` (`center.c`); `thinker_main` (`leader.c`) | reader and worker threads; the leader's thinker thread | type `PLAN`/`BUSY` lines into `./leader --id 0` by hand |
+| 3 | `grid.c`; `follower_main` (`leader.c`) | `handle_assign` creates the grid and threads | `./gridbench`, `./swapstress` |
+| 4 | the lock order in `grid_swap` | `tools/swapstress.c` | `./swapstress row 8 2` |
+| 5 | `on_leader_exit` (`center.c`) | the reader thread, at EOF | `./center --battery 1:20` |
+| 6 | tests in `tests/run_tests.sh`, `REPORT.md` | `make test` | |
+
+Do not edit the given files to make a test pass. If a given module seems wrong to you, tell us:
+the protocol is a contract, and the center audits whatever the leaders report.
+
+---
+
 ## 🚀 Getting Started
 
 ```bash
