@@ -3,6 +3,8 @@
 BIL 322, Final Project (Autonomous Drone Swarm Choreographers), Phase 1.
 The assignment is in `labs/swarm-phase1-threads-sync.md`, the project in
 `projects/project3-drone-swarm-choreographers.md`. Read both before you start.
+The handout has a section "The Source Tree" that explains every file, the threads and locks of the
+center and of a leader, and how a message travels through the files. Read it before the code.
 
 ## Build and run
 
