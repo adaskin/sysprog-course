@@ -18,7 +18,7 @@ a short intro, a wave section, and then the finale, where every pixel of the tar
 
 ([animated version](images/swarm/swarm-show.gif))
 
-These pictures are drawn from the center's ASCII output by `labs/images/swarm/render.py`; in Phase 2
+These pictures are drawn from the center's ASCII output by `render.py`; in Phase 2
 the viewer becomes a real window (SDL, GTK, or Qt) that draws the same thing. In Task 5 you will make
 this happen: captain 1 runs out of battery in the middle of the waves, the center notices and restarts
 it, its new troupe starts again at home, and the picture still forms.
@@ -100,6 +100,13 @@ cd labs/swarm-phase1-skeleton
 make                      # builds; the show cannot run yet, your TODOs are empty
 make test                 # PASS/FAIL per check; start with the queue checks
 ```
+
+**See your show.** Once Tasks 1-3 work together, `./show.sh` runs the show and draws it as `show.png`
+and `show.gif` (needs `pip install pillow`; `./show.sh --battery 1:24` shows Task 5). This is only a
+simple picture view: it reads the ASCII frames after the run, and it is there so you can see what
+you built. In the project you will write your own viewer, with a real window (Qt, GTK, or SDL)
+and extra controls such as pause, speed, or choosing a score, as described in the project
+writeup. Phase 2 is where that starts.
 
 Suggested order: **queue → grid → center (`serve_request`) → thinker → follower → restart →
 deadlock fix**. The full show needs Tasks 1-3 to exist together, so test each piece with its

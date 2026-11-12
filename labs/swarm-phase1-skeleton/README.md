@@ -24,6 +24,10 @@ To see the show you are building, run `./center --score data/scores/show.score -
 --ascii 8` (the stage as text; 4 leaders x 46 followers draw a rainbow heart). The lab handout shows
 what it looks like when everything works.
 
+`./show.sh` (needs Pillow, `tools/render.py`) runs the full show and draws it as `show.png` and
+`show.gif`: a simple picture view for the lab. Your own viewer with a real window (Qt, GTK, or SDL)
+and extra controls comes in the project phases.
+
 The program prints one line like
 
 ```
