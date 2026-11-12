@@ -1,0 +1,29 @@
+<section id="t2-planner" data-transition="fade" style="background:#0B1020;color:#E8ECFA;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#FFC857">Task 2 · 25%</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#F4F6FF">The choreographer and the captain</h2>
+<div style="display:flex;gap:28px;flex:1">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#151C38;padding:32px;border-radius:16px;border-top:6px solid #FFC857">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#FFC857">Center</h3>
+<p style="font-size:26px;color:#9AA6CC">handle_plan_req, serve_request</p>
+<ul style="font-size:28px;line-height:1.45;color:#E8ECFA">
+<li>try_push; queue full: <b>BUSY 50</b>. A reader thread never blocks</li>
+<li><b>Semaphore</b>: at most --max-inflight planner calls</li>
+<li>KV blocks from the Lab 6 pool. The pool is <b>not thread-safe</b>: wrap it in pool_mu</li>
+<li>Pool empty: BUSY. That is backpressure too</li>
+<li>Every exit path gives back the blocks and posts the semaphore</li>
+</ul>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#151C38;padding:32px;border-radius:16px;border-top:6px solid #5CE1E6">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#5CE1E6">Captain</h3>
+<p style="font-size:26px;color:#9AA6CC">thinker_main</p>
+<ul style="font-size:28px;line-height:1.45;color:#E8ECFA">
+<li>Per THEME: send <b>PLAN_REQ</b>, wait for PLAN or BUSY</li>
+<li>BUSY: sleep retry_ms + a <b>random</b> extra. A fixed delay makes every leader retry together: livelock</li>
+<li>Run <b>validate_plan</b>. Invalid: new seed, at most 6 tries (--flaky 50 tests this)</li>
+<li>Always send <b>READY</b>, even after giving up: the troupe holds and the show goes on</li>
+</ul>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#7E8AB5">BIL 322 · Swarm Phase 1 lab</p>
+<aside>In the center, a reader thread receives PLAN_REQ and must never block: it does a try_push on the request queue, and if the queue is full it answers BUSY immediately. A planner thread pops the request, takes a semaphore slot (this limits how many planner calls run at once) and takes its KV blocks from your Lab 6 pool. Your pool is deliberately not thread-safe, so every alloc and free goes under pool_mu. If the pool is empty the answer is BUSY as well: two kinds of backpressure. Then plan_section runs (it sleeps to simulate a slow model), the PLAN is sent, and the blocks and the semaphore are released on every path. In the leader, the thinker asks for a plan per theme. After BUSY it waits retry_ms plus a random extra: if all leaders retried at the same moment they would collide again and again, which is livelock. A real model could be wrong, so the captain never trusts a plan: the validator checks speed, collisions, zone and density, and an invalid plan is requested again with a new seed. The flaky option makes half of the plans wrong on purpose. READY is sent even if the captain gave up; otherwise the center would wait for that leader forever.</aside>
+</section>

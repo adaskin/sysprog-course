@@ -1,0 +1,29 @@
+<section id="grading" data-transition="fade" style="background:#F3F0E8;color:#14193A;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#2748C9">Hand-in and grading</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1">What to submit, what costs you points</h2>
+<div style="display:flex;gap:28px;flex:1">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FFFFFF;padding:32px;border-radius:16px;border-top:6px solid #2748C9">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#2748C9">Submit</h3>
+<ul style="font-size:28px;line-height:1.45;color:#14193A">
+<li>Your repository (GitHub Classroom) and the link on Google Classroom</li>
+<li><b>make test</b> and <b>make tsan</b> pass; Valgrind is clean</li>
+<li>At least <b>two tests of your own</b> in tests/run_tests.sh</li>
+<li><b>REPORT.md</b>: architecture sketch, what each mutex protects, lock ordering, the deadlock write-up, captain-down handling, the bench table, AI assistance</li>
+</ul>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FFFFFF;padding:32px;border-radius:16px;border-top:6px solid #C2410C">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#C2410C">Zero tolerance</h3>
+<ul style="font-size:28px;line-height:1.45;color:#14193A">
+<li>Busy-waiting</li>
+<li>An <b>if</b> around pthread_cond_wait</li>
+<li>An unprotected Lab 6 pool</li>
+<li>Zombie processes after a captain dies</li>
+<li>A hang on shutdown</li>
+<li>A missing report</li>
+</ul>
+<p style="font-size:26px;line-height:1.4;color:#55597A">Bonus up to +10%: priority queue, reader-writer lock for the grid, battery counter with a charging-station semaphore.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#55597A">BIL 322 · Swarm Phase 1 lab</p>
+<aside>Submit your repository through GitHub Classroom and put the link on Google Classroom. make test and make tsan must pass and Valgrind must be clean. Add at least two tests of your own to the test script, for example more leaders or killing two captains. The report is short but required, and it must explain, not only describe. AI use is allowed, but it must be disclosed in the report and you must be able to explain every line. The zero-tolerance list is the set of things that make a concurrent program wrong even when it appears to work. The bonus items are listed at the end of the handout.</aside>
+</section>

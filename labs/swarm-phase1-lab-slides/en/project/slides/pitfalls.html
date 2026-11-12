@@ -1,0 +1,25 @@
+<section id="pitfalls" data-transition="fade" style="background:#0B1020;color:#E8ECFA;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#FFC857">When it hangs</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#F4F6FF">Four traps, and how to see them</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;flex:1">
+<div style="display:flex;flex-direction:column;gap:12px;background:#151C38;padding:32px;border-radius:16px;border-left:6px solid #FFC857">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:36px;font-weight:600;color:#FFC857">A barrier nobody reaches</h3>
+<p style="font-size:28px;line-height:1.4;color:#E8ECFA">The barrier is shared by <b>all</b> followers. One early return or continue between the two waits, and everyone else waits forever.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;background:#151C38;padding:32px;border-radius:16px;border-left:6px solid #5CE1E6">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:36px;font-weight:600;color:#5CE1E6">A lock never released</h3>
+<p style="font-size:28px;line-height:1.4;color:#E8ECFA">Every unlock must happen on every path. Early returns are the usual leak, in the queue and in serve_request.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;background:#151C38;padding:32px;border-radius:16px;border-left:6px solid #FF853F">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:36px;font-weight:600;color:#FF853F">The wrong lock order</h3>
+<p style="font-size:28px;line-height:1.4;color:#E8ECFA">In the center: wlock first, then st_mu. The same rule fixes grid_swap: always the lower row first.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;background:#151C38;padding:32px;border-radius:16px;border-left:6px solid #A7FF3F">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:36px;font-weight:600;color:#A7FF3F">Hiding a race with sleep</h3>
+<p style="font-size:28px;line-height:1.4;color:#E8ECFA">Never. Run make tsan instead, and read the two stacks it prints.</p>
+</div>
+</div>
+<p style="font-size:30px;line-height:1.4;color:#B9C3E8">A hang prints <b style="color:#E8ECFA">center: TIMEOUT</b> after --timeout seconds. Attach with <span style="font-family:'JetBrains Mono', 'Courier New', monospace;color:#5CE1E6">gdb -p PID</span>, then <span style="font-family:'JetBrains Mono', 'Courier New', monospace;color:#5CE1E6">thread apply all bt</span>.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#7E8AB5">BIL 322 · Swarm Phase 1 lab</p>
+<aside>Four things that will go wrong this week. One: the barrier is shared by all followers of a leader; if any of them leaves the loop between the two waits, the others wait forever. Two: a lock not released on some path, for example an early return; read your code for every return. Three: lock order. The center’s state lock and the per-leader write lock have a fixed order, commented in center.c; breaking it can deadlock. The same idea fixes the grid_swap deadlock. Four: sleeping to make a race disappear never fixes it; use ThreadSanitizer, which prints the two conflicting accesses. When the show hangs, the watchdog prints a timeout; attach gdb to the process and print all thread backtraces to see who waits for what. That output is also the evidence for the Task 4 write-up. Start with the queue.</aside>
+</section>

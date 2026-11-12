@@ -1,0 +1,29 @@
+<section id="t2-planner" data-transition="fade" style="background:#0B1020;color:#E8ECFA;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#FFC857">Görev 2 · %25</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#F4F6FF">Koreograf ve kaptan</h2>
+<div style="display:flex;gap:28px;flex:1">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#151C38;padding:32px;border-radius:16px;border-top:6px solid #FFC857">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#FFC857">Center</h3>
+<p style="font-size:26px;color:#9AA6CC">handle_plan_req, serve_request</p>
+<ul style="font-size:28px;line-height:1.45;color:#E8ECFA">
+<li>try_push; kuyruk doluysa: <b>BUSY 50</b>. Reader thread asla beklemez</li>
+<li><b>Semafor</b>: en fazla --max-inflight planlayıcı çağrısı</li>
+<li>KV blokları Lab 6 havuzundan. Havuz <b>thread-safe değildir</b>: pool_mu ile sar</li>
+<li>Havuz boşsa: BUSY. Bu da bir geri basınçtır (backpressure)</li>
+<li>Her çıkış yolu blokları geri verir ve semaforu bırakır (post)</li>
+</ul>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#151C38;padding:32px;border-radius:16px;border-top:6px solid #5CE1E6">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#5CE1E6">Kaptan</h3>
+<p style="font-size:26px;color:#9AA6CC">thinker_main</p>
+<ul style="font-size:28px;line-height:1.45;color:#E8ECFA">
+<li>Her THEME için: <b>PLAN_REQ</b> gönder, PLAN veya BUSY bekle</li>
+<li>BUSY: retry_ms + <b>rastgele</b> bir ek süre uyu. Sabit gecikme tüm leader’ları aynı anda tekrar denetir: livelock</li>
+<li><b>validate_plan</b> çalıştır. Geçersizse: yeni seed, en fazla 6 deneme (--flaky 50 bunu test eder)</li>
+<li>Vazgeçsen bile her zaman <b>READY</b> gönder: topluluk yerinde bekler ve gösteri sürer</li>
+</ul>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#7E8AB5">BIL 322 · Swarm Faz 1 laboratuvarı</p>
+<aside>Center'da bir reader thread PLAN_REQ alır ve asla beklememelidir: istek kuyruğuna try_push yapar, kuyruk doluysa hemen BUSY yanıtlar. Bir planlayıcı thread'i isteği çeker, bir semafor yuvası alır (aynı anda kaç planlayıcı çağrısı çalışacağını sınırlar) ve KV bloklarını Lab 6 havuzundan alır. Havuzun bilerek thread-safe değildir; bu yüzden her alloc ve free pool_mu altında yapılır. Havuz boşsa yanıt yine BUSY'dir: iki tür geri basınç (backpressure). Sonra plan_section çalışır (yavaş bir modeli taklit etmek için uyur), PLAN gönderilir; bloklar ve semafor her yolda serbest bırakılır. Leader'da thinker her tema için plan ister. BUSY'den sonra retry_ms artı rastgele bir ek süre bekler: tüm leader'lar aynı anda tekrar deneseydi tekrar tekrar çarpışırlardı; buna livelock denir. Gerçek bir model yanılabilir, bu yüzden kaptan bir plana asla güvenmez: doğrulayıcı hızı, çarpışmaları, bölgeyi ve yoğunluğu kontrol eder, geçersiz plan yeni bir seed ile yeniden istenir. flaky seçeneği planların yarısını bilerek yanlış yapar. Kaptan vazgeçse bile READY gönderilir; yoksa center o leader'ı sonsuza kadar bekler.</aside>
+</section>

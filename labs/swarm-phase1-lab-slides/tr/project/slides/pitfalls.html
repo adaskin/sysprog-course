@@ -1,0 +1,25 @@
+<section id="pitfalls" data-transition="fade" style="background:#0B1020;color:#E8ECFA;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#FFC857">Takıldığında</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#F4F6FF">Dört tuzak ve nasıl görülür</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;flex:1">
+<div style="display:flex;flex-direction:column;gap:12px;background:#151C38;padding:32px;border-radius:16px;border-left:6px solid #FFC857">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:36px;font-weight:600;color:#FFC857">Kimsenin ulaşmadığı barrier</h3>
+<p style="font-size:28px;line-height:1.4;color:#E8ECFA">Barrier <b>tüm</b> follower’lar tarafından paylaşılır. İki bekleme arasında tek bir erken return veya continue, herkesi sonsuza kadar bekletir.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;background:#151C38;padding:32px;border-radius:16px;border-left:6px solid #5CE1E6">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:36px;font-weight:600;color:#5CE1E6">Hiç bırakılmayan kilit</h3>
+<p style="font-size:28px;line-height:1.4;color:#E8ECFA">Her unlock her yolda olmalı. Erken return’ler olağan sızıntıdır: kuyrukta ve serve_request’te.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;background:#151C38;padding:32px;border-radius:16px;border-left:6px solid #FF853F">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:36px;font-weight:600;color:#FF853F">Yanlış kilit sırası</h3>
+<p style="font-size:28px;line-height:1.4;color:#E8ECFA">Center’da: önce wlock, sonra st_mu. Aynı kural grid_swap’ı düzeltir: her zaman önce küçük numaralı satır.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;background:#151C38;padding:32px;border-radius:16px;border-left:6px solid #A7FF3F">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:36px;font-weight:600;color:#A7FF3F">Yarışı sleep ile gizlemek</h3>
+<p style="font-size:28px;line-height:1.4;color:#E8ECFA">Asla. Bunun yerine make tsan çalıştır ve yazdırdığı iki stack’i oku.</p>
+</div>
+</div>
+<p style="font-size:30px;line-height:1.4;color:#B9C3E8">Takılma, --timeout saniye sonra <b style="color:#E8ECFA">center: TIMEOUT</b> yazdırır. Şununla bağlan: <span style="font-family:'JetBrains Mono', 'Courier New', monospace;color:#5CE1E6">gdb -p PID</span>, sonra <span style="font-family:'JetBrains Mono', 'Courier New', monospace;color:#5CE1E6">thread apply all bt</span>.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#7E8AB5">BIL 322 · Swarm Faz 1 laboratuvarı</p>
+<aside>Bu hafta ters gidecek dört şey. Bir: barrier bir leader'ın tüm follower'ları tarafından paylaşılır; biri iki bekleme arasında döngüden çıkarsa diğerleri sonsuza kadar bekler. İki: bir yolda bırakılmayan kilit, örneğin erken bir return; kodunu her return için oku. Üç: kilit sırası. Center'ın durum kilidi ile leader başına yazma kilidinin sabit bir sırası vardır ve center.c içinde yorumlanmıştır; bozmak deadlock yapabilir. Aynı fikir grid_swap deadlock'unu da düzeltir. Dört: sleep ile bir yarış durumunu gizlemek onu asla düzeltmez; çakışan iki erişimi yazdıran ThreadSanitizer'ı kullan. Gösteri takıldığında watchdog bir timeout yazdırır; sürece gdb ile bağlan ve tüm thread backtrace'lerini yazdır, kimin neyi beklediğini gör. Bu çıktı aynı zamanda Görev 4 açıklamasının kanıtıdır. Kuyrukla başla.</aside>
+</section>

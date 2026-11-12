@@ -1,0 +1,15 @@
+<section id="phases" data-transition="fade" style="background:#F3F0E8;color:#14193A;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#2748C9">Three phases, one system</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1">Same protocol, three transports</h2>
+<table style="font-size:28px;color:#14193A">
+<tr><th style="width:19%;text-align:left"></th><th style="width:27%;text-align:left;color:#2748C9">Phase 1 (this week)</th><th style="width:27%;text-align:left">Phase 2</th><th style="width:27%;text-align:left">Phase 3</th></tr>
+<tr><td style="font-weight:600">Leader</td><td>child process (fork, exec)</td><td>child process</td><td>client process</td></tr>
+<tr><td style="font-weight:600">Performer</td><td>thread in its captain</td><td>thread in its captain</td><td>separate process</td></tr>
+<tr><td style="font-weight:600">Links</td><td>pipes</td><td>pipes + shared memory</td><td>TCP sockets</td></tr>
+<tr><td style="font-weight:600">Viewer</td><td>text in the terminal</td><td>own process, shared memory</td><td>socket client</td></tr>
+<tr><td style="font-weight:600">Captain dies</td><td>center notices and restarts it</td><td>+ its cells are released</td><td>orphans are rehomed</td></tr>
+</table>
+<p style="font-size:32px;line-height:1.4;color:#14193A">Write your send and receive code against <b>file descriptors</b>, and keep parsing separate from transport: Phase 3 then changes the transport, not the program.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#55597A">BIL 322 · Swarm Phase 1 lab</p>
+<aside>The protocol stays the same in all phases; what changes is how the pieces talk. This week leaders are child processes created with fork and exec (your Lab 4 pattern) and connected by pipes (Lab 5). Performers are threads. Phase 2 moves the stage into shared memory and the viewer into its own process. In Phase 3 everything uses sockets and performers become separate processes, so when a captain dies its troupe is really orphaned. The question behind the whole project: when a captain dies, who notices, and who takes over its troupe? Your code already sends lines over file descriptors, so the later change of transport is small.</aside>
+</section>

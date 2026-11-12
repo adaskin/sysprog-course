@@ -1,0 +1,29 @@
+<section id="grading" data-transition="fade" style="background:#F3F0E8;color:#14193A;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#2748C9">Teslim ve notlandırma</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1">Ne teslim edilir, ne puan kırar</h2>
+<div style="display:flex;gap:28px;flex:1">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FFFFFF;padding:32px;border-radius:16px;border-top:6px solid #2748C9">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#2748C9">Teslim</h3>
+<ul style="font-size:28px;line-height:1.45;color:#14193A">
+<li>Repository’n (GitHub Classroom) ve Google Classroom’daki bağlantı</li>
+<li><b>make test</b> ve <b>make tsan</b> geçer; Valgrind temiz</li>
+<li>tests/run_tests.sh içinde en az <b>iki kendi testin</b></li>
+<li><b>REPORT.md</b>: mimari taslağı, her mutex’in neyi koruduğu, kilit sıralaması, deadlock açıklaması, kaptan düşmesinin ele alınışı, bench tablosu, yapay zekâ yardımı</li>
+</ul>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FFFFFF;padding:32px;border-radius:16px;border-top:6px solid #C2410C">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#C2410C">Sıfır tolerans</h3>
+<ul style="font-size:28px;line-height:1.45;color:#14193A">
+<li>Meşgul bekleme (busy-waiting)</li>
+<li>pthread_cond_wait etrafında <b>if</b></li>
+<li>Korunmayan Lab 6 havuzu</li>
+<li>Kaptan ölünce kalan zombie süreçler</li>
+<li>Kapanışta takılma</li>
+<li>Eksik rapor</li>
+</ul>
+<p style="font-size:26px;line-height:1.4;color:#55597A">Bonus en fazla +%10: öncelikli kuyruk, ızgara için reader-writer lock, şarj istasyonu semaforlu batarya sayacı.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#55597A">BIL 322 · Swarm Faz 1 laboratuvarı</p>
+<aside>Repository'ni GitHub Classroom ile teslim et ve bağlantıyı Google Classroom'a koy. make test ve make tsan geçmeli, Valgrind temiz olmalı. Test betiğine en az iki kendi testini ekle; örneğin daha fazla leader ya da iki kaptanı öldürmek. Rapor kısa ama zorunlu ve sadece anlatmamalı, açıklamalı. Yapay zekâ kullanımı serbesttir, ancak raporda belirtilmeli ve her satırı açıklayabilmelisin. Sıfır tolerans listesi, bir eşzamanlı program çalışıyor gibi görünse bile onu yanlış yapan şeylerdir. Bonus maddeleri föyün sonunda listelenmiştir.</aside>
+</section>

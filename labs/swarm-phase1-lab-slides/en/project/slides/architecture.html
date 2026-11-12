@@ -1,0 +1,28 @@
+<section id="architecture" data-transition="fade" style="background:#0B1020;color:#E8ECFA;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#FFC857">Phase 1 architecture</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#F4F6FF">Two kinds of process, many threads</h2>
+<div style="display:flex;gap:24px;flex:1;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:18px;background:#151C38;padding:32px;border-radius:16px;border-top:6px solid #FFC857">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#FFC857">center</h3>
+<p style="font-size:26px;color:#9AA6CC">one process, the parent</p>
+<p style="font-size:28px;line-height:1.4;background:#0B1020;padding:16px 20px;border-radius:10px"><b>main thread</b> · clock loop: THEME, BEAT, waits for READY and ACK, audits the stage</p>
+<p style="font-size:28px;line-height:1.4;background:#0B1020;padding:16px 20px;border-radius:10px"><b>reader threads</b> · one per leader, parse its pipe</p>
+<p style="font-size:28px;line-height:1.4;background:#0B1020;padding:16px 20px;border-radius:10px"><b>planner pool</b> · threads behind a bounded request queue, Lab 6 pool + arena</p>
+</div>
+<div style="width:200px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px">
+<p style="font-size:28px;font-weight:600;color:#5CE1E6;text-align:center">pipes</p>
+<x-shape kind="arrow-right" style="background:#5CE1E6;width:160px;height:64px"></x-shape>
+<x-shape kind="arrow-left" style="background:#5CE1E6;width:160px;height:64px"></x-shape>
+<p style="font-size:24px;color:#9AA6CC;text-align:center">one text line per message</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:18px;background:#151C38;padding:32px;border-radius:16px;border-top:6px solid #5CE1E6">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#5CE1E6">leader × 4</h3>
+<p style="font-size:26px;color:#9AA6CC">one child process per zone: fork, dup2, exec</p>
+<p style="font-size:28px;line-height:1.4;background:#0B1020;padding:16px 20px;border-radius:10px"><b>main thread</b> · reads the center’s lines</p>
+<p style="font-size:28px;line-height:1.4;background:#0B1020;padding:16px 20px;border-radius:10px"><b>thinker</b> · PLAN_REQ, validate, READY</p>
+<p style="font-size:28px;line-height:1.4;background:#0B1020;padding:16px 20px;border-radius:10px"><b>follower threads</b> · F0 … Fk, one barrier per beat, claim cells in the zone’s occupancy grid</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#7E8AB5">BIL 322 · Swarm Phase 1 lab</p>
+<aside>The center’s main thread runs the clock: it sends each section’s theme and each beat, and waits until every leader has said READY for a section and ACK for each beat. One reader thread per leader parses that leader’s pipe. The choreographer is a thread pool behind a bounded request queue, and every request takes memory from your Lab 6 pool. Each leader is a child process started with fork, dup2 and exec, like your Lab 4 shell. Inside it: a main thread reading the pipe, a thinker thread that asks for plans, and one thread per follower. The occupancy grid is per leader, because the followers are its threads and can claim cells directly. The center does not trust the leaders: it audits the POS reports for collisions and speed. Read center.c once from top to bottom before you write your part; its locks and their order are commented.</aside>
+</section>

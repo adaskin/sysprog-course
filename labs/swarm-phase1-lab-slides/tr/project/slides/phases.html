@@ -1,0 +1,15 @@
+<section id="phases" data-transition="fade" style="background:#F3F0E8;color:#14193A;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#2748C9">Üç faz, tek sistem</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1">Aynı protokol, üç taşıma yolu</h2>
+<table style="font-size:28px;color:#14193A">
+<tr><th style="width:19%;text-align:left"></th><th style="width:27%;text-align:left;color:#2748C9">Faz 1 (bu hafta)</th><th style="width:27%;text-align:left">Faz 2</th><th style="width:27%;text-align:left">Faz 3</th></tr>
+<tr><td style="font-weight:600">Leader</td><td>child süreç (fork, exec)</td><td>child süreç</td><td>client süreç</td></tr>
+<tr><td style="font-weight:600">Dansçı</td><td>kaptanın içinde thread</td><td>kaptanın içinde thread</td><td>ayrı süreç</td></tr>
+<tr><td style="font-weight:600">Bağlantılar</td><td>pipe’lar</td><td>pipe’lar + paylaşımlı bellek</td><td>TCP socket’ler</td></tr>
+<tr><td style="font-weight:600">Viewer</td><td>terminalde metin</td><td>ayrı süreç, paylaşımlı bellek</td><td>socket client</td></tr>
+<tr><td style="font-weight:600">Kaptan ölünce</td><td>center fark eder ve yeniden başlatır</td><td>+ hücreleri serbest bırakılır</td><td>yetim kalanlar yeniden yerleştirilir</td></tr>
+</table>
+<p style="font-size:32px;line-height:1.4;color:#14193A">Gönderme ve alma kodunu <b>file descriptor</b>’lar üzerine yaz ve ayrıştırmayı (parsing) taşıma yolundan ayrı tut: Faz 3’te programı değil, yalnızca taşıma yolunu değiştirirsin.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#55597A">BIL 322 · Swarm Faz 1 laboratuvarı</p>
+<aside>Protokol tüm fazlarda aynı kalır; değişen, parçaların birbiriyle nasıl konuştuğudur. Bu hafta leader'lar fork ve exec ile oluşturulan child süreçlerdir (Lab 4 kalıbın) ve pipe'larla bağlanırlar (Lab 5). Dansçılar thread'dir. Faz 2'de sahne paylaşımlı belleğe, viewer ise kendi sürecine taşınır. Faz 3'te her şey socket kullanır ve dansçılar ayrı süreçler olur; böylece bir kaptan öldüğünde topluluğu gerçekten yetim kalır. Tüm projenin arkasındaki soru: bir kaptan öldüğünde bunu kim fark eder ve topluluğunu kim devralır? Kodun zaten file descriptor'lar üzerinden satır gönderdiği için daha sonra taşıma yolunu değiştirmek küçük bir iştir.</aside>
+</section>

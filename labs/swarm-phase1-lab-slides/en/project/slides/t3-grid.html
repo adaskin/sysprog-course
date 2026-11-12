@@ -1,0 +1,24 @@
+<section id="t3-grid" data-transition="fade" style="background:#0B1020;color:#E8ECFA;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#FFC857">Task 3 · 25%</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#F4F6FF">Performers in lockstep, and the grid</h2>
+<div style="display:flex;gap:28px;flex:1">
+<div style="flex:1;display:flex;flex-direction:column;gap:18px;background:#151C38;padding:32px;border-radius:16px;border-top:6px solid #5CE1E6">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#5CE1E6">The occupancy grid</h3>
+<p style="font-size:26px;color:#9AA6CC">grid_claim, grid_release, grid_owner</p>
+<ul style="font-size:28px;line-height:1.45;color:#E8ECFA">
+<li>One drone per cell, per leader’s zone</li>
+<li>Two modes: <b>one mutex</b> for the grid, or <b>one mutex per row</b></li>
+<li>A reader must lock too. Why?</li>
+<li>make bench times both with 1, 2, 4, 8 threads. Put the table in the report and <b>explain</b> it</li>
+</ul>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:18px;background:#151C38;padding:32px;border-radius:16px;border-top:6px solid #FF853F">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#FF853F">follower_main</h3>
+<p style="font-size:26px;color:#9AA6CC">for every beat b, in order</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.55;color:#E8ECFA;background:#0B1020;padding:20px 24px;border-radius:10px">wait for BEAT b<br>target = plan or hold<br>release(old cell)<br>barrier<br>claim(target)<br>barrier<br>serial thread: POS lines, ACK</p>
+<p style="font-size:28px;line-height:1.4;color:#E8ECFA">Failed claim = safety violation: count it, log it, stay where you were.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#7E8AB5">BIL 322 · Swarm Phase 1 lab</p>
+<aside>The occupancy grid: one mutex for the whole grid versus one mutex per row. Implement claim, release and owner for both modes. A reader must lock too: without the lock it can see a half-updated state, which is a data race. make bench runs random claim and release from 1, 2, 4 and 8 threads in both modes. Put the table in your report and explain your own numbers: they depend on your machine and cores (contention on one mutex, what scales, and what else could be the bottleneck). The show itself at tempo 0 is dominated by the planner’s thinking time, so the grid is not the bottleneck there. Second part: follower_main with the two barriers from the beat slide. With a valid plan a claim never fails; if it does, it is a safety violation, so count it and log it.</aside>
+</section>

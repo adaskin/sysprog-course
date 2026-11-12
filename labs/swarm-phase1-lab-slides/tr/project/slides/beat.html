@@ -1,0 +1,22 @@
+<section id="beat" data-transition="fade" style="background:#0B1020;color:#E8ECFA;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#FFC857">Nasıl çalışır</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#F4F6FF">Bir beat, adım adım</h2>
+<div style="display:flex;gap:48px;flex:1">
+<div style="flex:1;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;gap:24px;align-items:center"><p style="width:56px;height:56px;border-radius:50%;background:#FFC857;color:#0B1020;font-size:30px;font-weight:600;text-align:center;line-height:56px">1</p><p style="flex:1;font-size:30px;line-height:1.35">Center <b>BEAT b</b> gönderir (ancak b−1 için ACK geldikten sonra).</p></div>
+<div style="display:flex;gap:24px;align-items:center"><p style="width:56px;height:56px;border-radius:50%;background:#FFC857;color:#0B1020;font-size:30px;font-weight:600;text-align:center;line-height:56px">2</p><p style="flex:1;font-size:30px;line-height:1.35">Her follower, kayıtlı plandan b için hedefini bulur (plan yoksa: olduğu yerde kalır).</p></div>
+<div style="display:flex;gap:24px;align-items:center"><p style="width:56px;height:56px;border-radius:50%;background:#5CE1E6;color:#0B1020;font-size:30px;font-weight:600;text-align:center;line-height:56px">3</p><p style="flex:1;font-size:30px;line-height:1.35">Bulunduğun hücreyi <b>bırak (release)</b>, sonra <b>barrier</b>’da bekle.</p></div>
+<div style="display:flex;gap:24px;align-items:center"><p style="width:56px;height:56px;border-radius:50%;background:#5CE1E6;color:#0B1020;font-size:30px;font-weight:600;text-align:center;line-height:56px">4</p><p style="flex:1;font-size:30px;line-height:1.35">Hedef hücreyi ızgarada <b>talep et (claim)</b>, sonra tekrar <b>barrier</b>.</p></div>
+<div style="display:flex;gap:24px;align-items:center"><p style="width:56px;height:56px;border-radius:50%;background:#FF853F;color:#0B1020;font-size:30px;font-weight:600;text-align:center;line-height:56px">5</p><p style="flex:1;font-size:30px;line-height:1.35">Barrier’ın seçtiği thread <b>POS</b> satırlarını ve <b>ACK b</b>’yi gönderir.</p></div>
+<div style="display:flex;gap:24px;align-items:center"><p style="width:56px;height:56px;border-radius:50%;background:#FF853F;color:#0B1020;font-size:30px;font-weight:600;text-align:center;line-height:56px">6</p><p style="flex:1;font-size:30px;line-height:1.35">Center çarpışmaları ve hızı denetler, sonra BEAT b+1 gönderir.</p></div>
+</div>
+<div style="width:560px;display:flex;flex-direction:column;gap:20px;background:#151C38;padding:36px;border-radius:16px;align-self:flex-start">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#5CE1E6">Neden iki barrier?</h3>
+<p style="font-size:28px;line-height:1.45;color:#E8ECFA">Bir beat içinde A follower’ı, B follower’ının terk ettiği hücreye girebilir.</p>
+<p style="font-size:28px;line-height:1.45;color:#E8ECFA">Tüm bırakmalar herhangi bir talepten önce olmalı, yoksa A’nın talebi yanlışlıkla başarısız olur.</p>
+<p style="font-size:28px;line-height:1.45;color:#9AA6CC">Başarısız bir talep bir güvenlik ihlalidir; döngüde tekrar denenecek bir şey değildir.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#7E8AB5">BIL 322 · Swarm Faz 1 laboratuvarı</p>
+<aside>Bu, Görev 3 ve 5'in kalbidir. Center her leader'a BEAT b gönderir ve b için ACK gelmeden asla b+1 göndermez: herkesi adım adım senkron tutan budur. Leader'da main thread beat'i yayımlar; her follower uyanır, hedefini kayıtlı plandan bulur, plan yoksa olduğu yerde kalır. Sonra barrier'larla ayrılmış iki aşama. Aşama 1: herkes bulunduğu hücreyi bırakır; barrier. Aşama 2: herkes hedef hücresini talep eder; barrier. Neden iki? Follower'lar aynı anda hareket eder. A, B'nin terk ettiği hücreyi isterse ve B henüz bırakmadıysa A'nın talebi başarısız olurdu. Arada bir barrier olunca tüm bırakmalar herhangi bir talepten önce gerçekleşir. İkinci barrier'dan sonra pthread_barrier_wait tam olarak bir thread'e PTHREAD_BARRIER_SERIAL_THREAD döndürür; o thread tüm follower'lar için POS satırlarını ve ardından ACK'yi gönderir. Başarısız bir talep bir güvenlik ihlalidir, döngüde tekrar denenecek bir şey değildir. Düşün: bir follower erken return edip bir barrier'ı atlarsa ne olur? Diğer herkes sonsuza kadar bekler.</aside>
+</section>

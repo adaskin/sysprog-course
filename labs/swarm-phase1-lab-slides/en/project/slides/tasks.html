@@ -1,0 +1,16 @@
+<section id="tasks" data-transition="fade" style="background:#F3F0E8;color:#14193A;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#2748C9">What you have to do</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1">Six tasks in the skeleton</h2>
+<table style="font-size:28px;color:#14193A">
+<tr><th style="width:6%;text-align:left">#</th><th style="width:30%;text-align:left">Task</th><th style="width:52%;text-align:left">Where</th><th style="width:12%;text-align:right">Points</th></tr>
+<tr><td style="font-weight:600">1</td><td>Bounded queue</td><td style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px">queue.c</td><td style="text-align:right;font-weight:600">20%</td></tr>
+<tr><td style="font-weight:600">2</td><td>Choreographer and captain</td><td style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px">center.c, leader.c (thinker)</td><td style="text-align:right;font-weight:600">25%</td></tr>
+<tr><td style="font-weight:600">3</td><td>Performers and the grid</td><td style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px">grid.c, leader.c (follower)</td><td style="text-align:right;font-weight:600">25%</td></tr>
+<tr><td style="font-weight:600">4</td><td>Find the deadlock</td><td style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px">grid_swap, swapstress</td><td style="text-align:right;font-weight:600">10%</td></tr>
+<tr><td style="font-weight:600">5</td><td>Captain down</td><td style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px">center.c (on_leader_exit)</td><td style="text-align:right;font-weight:600">10%</td></tr>
+<tr><td style="font-weight:600">6</td><td>Tests and report</td><td style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px">make test, make tsan, REPORT.md</td><td style="text-align:right;font-weight:600">10%</td></tr>
+</table>
+<p style="font-size:32px;line-height:1.4;color:#14193A"><b>Given:</b> protocol parser, planner, validator, loaders, the clock loop, the unit tests and the test script. <b>Yours:</b> the TODO blocks.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#55597A">BIL 322 · Swarm Phase 1 lab</p>
+<aside>This is the whole assignment on one page. The skeleton repository already contains the protocol parser, the planner (the slow stand-in for an LLM), the plan validator, the score and image loaders, the center’s clock loop and the tests. You fill in the TODO blocks. Task 1: the bounded queue. Task 2: the request pipeline in the center and the thinker in the leader. Task 3: the occupancy grid in both lock modes and the follower threads. Task 4: a deadlock that is already in grid_swap; you reproduce it, explain it and fix it. Task 5: notice a dead captain and restart it. Task 6: make test and make tsan must pass, plus a short report. The handout has the details of each task.</aside>
+</section>
