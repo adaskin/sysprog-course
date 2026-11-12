@@ -16,3 +16,8 @@ stderr.log
 queue.log
 swap.log
 vg.log
+
+# output of show.sh
+frames.txt
+show.png
+show.gif
