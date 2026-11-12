@@ -1,0 +1,28 @@
+<section id="t1-queue" data-transition="fade" style="background:#0B1020;color:#E8ECFA;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#FFC857">Task 1 · 20%</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#F4F6FF">The bounded queue</h2>
+<div style="display:flex;gap:40px;flex:1">
+<div style="width:1000px;display:flex;flex-direction:column;gap:20px">
+<div style="background:#151C38;padding:32px;border-radius:16px;display:flex;flex-direction:column;gap:10px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#5CE1E6">queue_t *queue_create(size_t cap, size_t item_size);</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#E8ECFA">int  queue_push(queue_t *q, const void *item);<span style="color:#7E8AB5">  // blocks if full</span></p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#E8ECFA">int  queue_try_push(queue_t *q, const void *item);<span style="color:#7E8AB5">  // -1 if full</span></p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#E8ECFA">int  queue_pop(queue_t *q, void *out);<span style="color:#7E8AB5">  // blocks if empty</span></p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#E8ECFA">void queue_close(queue_t *q);<span style="color:#7E8AB5">  // wake everyone</span></p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#E8ECFA">size_t queue_size(queue_t *q);  void queue_destroy(queue_t *q);</p>
+</div>
+<p style="font-size:30px;line-height:1.4;color:#B9C3E8">Used twice: the center’s <b style="color:#E8ECFA">request queue</b> (try_push, then BUSY if full) and the leader’s queue of themes.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:18px;background:#151C38;padding:32px;border-radius:16px;align-self:flex-start">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#FFC857">Rules</h3>
+<ul style="font-size:30px;line-height:1.45;color:#E8ECFA">
+<li><b>while</b>, not if, around every pthread_cond_wait</li>
+<li>After close: pop drains the rest, then returns −1; push returns −1</li>
+<li>close wakes <b>everyone</b>: broadcast</li>
+<li>No busy-waiting, no sleep</li>
+</ul>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#7E8AB5">BIL 322 · Swarm Phase 1 lab</p>
+<aside>Task 1 is the classic bounded buffer from the lecture: a ring buffer with a mutex and condition variables. Two condition variables, not full and not empty, make the logic easy to read. Items are copied by value, so the same queue holds ints, requests and themes. Use while because of spurious wakeups and because another thread may take the item before you. After queue_close, pop keeps returning the remaining items and then fails, so workers drain the queue and exit; push fails immediately, also for a thread that was already blocked in push. close must wake everybody: broadcast, not signal. No busy-waiting and no sleep. You can test the queue alone with tests/test_queue before the rest of the project exists.</aside>
+</section>

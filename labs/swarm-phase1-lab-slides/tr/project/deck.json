@@ -1,0 +1,60 @@
+{
+  "v": 4,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-12T06:10:00Z"
+  },
+  "lists": "css",
+  "title": "Swarm Faz 1 laboratuvar sunumu",
+  "order": [
+    "cover",
+    "story",
+    "result",
+    "phases",
+    "architecture",
+    "protocol",
+    "beat",
+    "tasks",
+    "t1-queue",
+    "t2-planner",
+    "t3-grid",
+    "t45",
+    "captain-down",
+    "start",
+    "grading",
+    "pitfalls"
+  ],
+  "sections": {
+    "s1": {
+      "description": "Projenin ne olduğu ve çalışınca nasıl göründüğü.",
+      "start": "cover"
+    },
+    "s2": {
+      "description": "Faz 1 nasıl kurulur: mimari, protokol ve bir beat.",
+      "start": "architecture"
+    },
+    "s3": {
+      "description": "Yapman gerekenler: altı görev.",
+      "start": "tasks"
+    },
+    "s4": {
+      "description": "Nasıl başlanır, nasıl notlandırılırsın ve nerede takılır.",
+      "start": "start"
+    }
+  },
+  "faces": {
+    "space-grotesk": {
+      "family": "Space Grotesk",
+      "href": "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400..700&display=swap"
+    },
+    "inter": {
+      "family": "Inter",
+      "href": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+    },
+    "jetbrains-mono": {
+      "family": "JetBrains Mono",
+      "href": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap"
+    }
+  },
+  "designSystems": []
+}

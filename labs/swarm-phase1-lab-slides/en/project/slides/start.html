@@ -1,0 +1,31 @@
+<section id="start" data-transition="fade" style="background:#0B1020;color:#E8ECFA;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#FFC857">Getting started</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#F4F6FF">Build, test, and the order to work in</h2>
+<div style="display:flex;gap:40px;flex:1">
+<div style="flex:1;display:flex;flex-direction:column;gap:24px">
+<div style="background:#151C38;padding:32px;border-radius:16px;display:flex;flex-direction:column;gap:6px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.7;color:#5CE1E6">cd labs/swarm-phase1-skeleton</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.7;color:#E8ECFA">make<span style="color:#7E8AB5">           # builds, TODOs are empty</span></p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.7;color:#E8ECFA">make test<span style="color:#7E8AB5">      # PASS/FAIL per check</span></p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.7;color:#E8ECFA">make tsan<span style="color:#7E8AB5">      # no WARNING allowed</span></p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.7;color:#E8ECFA">make bench<span style="color:#7E8AB5">     # one lock vs row locks</span></p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.7;color:#E8ECFA">./center --tempo 0 --ascii 8</p>
+</div>
+<p style="font-size:28px;line-height:1.4;color:#B9C3E8">The full show needs Tasks 1 to 3 together. Until then test each piece alone: <b style="color:#E8ECFA">test_queue</b>, <b style="color:#E8ECFA">swapstress</b>, <b style="color:#E8ECFA">gridbench</b>, or type protocol lines into <b style="color:#E8ECFA">./leader --id 0</b>.</p>
+</div>
+<div style="width:620px;display:flex;flex-direction:column;gap:18px;background:#151C38;padding:32px;border-radius:16px;align-self:flex-start">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#FFC857">Suggested order</h3>
+<ol style="font-size:30px;line-height:1.5;color:#E8ECFA">
+<li>queue.c</li>
+<li>grid claim, release, owner</li>
+<li>center: serve_request</li>
+<li>leader: thinker</li>
+<li>leader: followers</li>
+<li>captain restart</li>
+<li>the deadlock fix</li>
+</ol>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#7E8AB5">BIL 322 · Swarm Phase 1 lab</p>
+<aside>Everything is in the skeleton repository; its README.md explains the layout. make builds center, leader and the tools, and make test runs a script that prints PASS or FAIL for each check. At the start nearly everything fails: that is expected. The whole show only runs when the queue, the planner pipeline and the followers all exist, so work in the suggested order and test the pieces separately: the queue has its own unit test, the grid has swapstress and gridbench, and you can type protocol lines into a leader by hand. If your Lab 6 kvpool.c and arena.c work, copy them into src/ and the Makefile uses them instead of the stand-in.</aside>
+</section>

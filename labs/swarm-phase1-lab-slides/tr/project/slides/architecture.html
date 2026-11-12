@@ -1,0 +1,28 @@
+<section id="architecture" data-transition="fade" style="background:#0B1020;color:#E8ECFA;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#FFC857">Faz 1 mimarisi</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#F4F6FF">İki tür süreç, çok sayıda thread</h2>
+<div style="display:flex;gap:24px;flex:1;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:18px;background:#151C38;padding:32px;border-radius:16px;border-top:6px solid #FFC857">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#FFC857">center</h3>
+<p style="font-size:26px;color:#9AA6CC">tek süreç, parent</p>
+<p style="font-size:28px;line-height:1.4;background:#0B1020;padding:16px 20px;border-radius:10px"><b>main thread</b> · saat döngüsü: THEME, BEAT, READY ve ACK bekler, sahneyi denetler</p>
+<p style="font-size:28px;line-height:1.4;background:#0B1020;padding:16px 20px;border-radius:10px"><b>reader thread’ler</b> · her leader için bir tane, pipe’ını ayrıştırır</p>
+<p style="font-size:28px;line-height:1.4;background:#0B1020;padding:16px 20px;border-radius:10px"><b>planner havuzu</b> · sınırlı bir istek kuyruğunun arkasında thread’ler, Lab 6 havuzu + arena</p>
+</div>
+<div style="width:200px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px">
+<p style="font-size:28px;font-weight:600;color:#5CE1E6;text-align:center">pipe’lar</p>
+<x-shape kind="arrow-right" style="background:#5CE1E6;width:160px;height:64px"></x-shape>
+<x-shape kind="arrow-left" style="background:#5CE1E6;width:160px;height:64px"></x-shape>
+<p style="font-size:24px;color:#9AA6CC;text-align:center">mesaj başına bir metin satırı</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:18px;background:#151C38;padding:32px;border-radius:16px;border-top:6px solid #5CE1E6">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#5CE1E6">leader × 4</h3>
+<p style="font-size:26px;color:#9AA6CC">bölge başına bir child süreç: fork, dup2, exec</p>
+<p style="font-size:28px;line-height:1.4;background:#0B1020;padding:16px 20px;border-radius:10px"><b>main thread</b> · center’ın satırlarını okur</p>
+<p style="font-size:28px;line-height:1.4;background:#0B1020;padding:16px 20px;border-radius:10px"><b>thinker</b> · PLAN_REQ, doğrulama, READY</p>
+<p style="font-size:28px;line-height:1.4;background:#0B1020;padding:16px 20px;border-radius:10px"><b>follower thread’ler</b> · F0 … Fk, beat başına bir barrier, bölgenin doluluk ızgarasında hücre talep eder</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#7E8AB5">BIL 322 · Swarm Faz 1 laboratuvarı</p>
+<aside>Center'ın main thread'i saati çalıştırır: her bölümün temasını ve her beat'i gönderir; her leader bir bölüm için READY, her beat için ACK diyene kadar bekler. Her leader için bir reader thread, o leader'ın pipe'ını ayrıştırır. Koreograf, sınırlı bir istek kuyruğunun arkasındaki bir thread havuzudur ve her istek belleğini Lab 6 havuzundan alır. Her leader, Lab 4 kabuğundaki gibi fork, dup2 ve exec ile başlatılan bir child süreçtir. İçinde: pipe'ı okuyan bir main thread, plan isteyen bir thinker thread'i ve her follower için bir thread. Doluluk ızgarası leader başınadır, çünkü follower'lar onun thread'idir ve hücreleri doğrudan talep edebilir. Center leader'lara güvenmez: çarpışma ve hız için POS raporlarını denetler. Kendi kısmını yazmadan önce center.c'yi bir kez baştan sona oku; kilitleri ve sıraları yorumlarla açıklanmıştır.</aside>
+</section>

@@ -1,0 +1,28 @@
+<section id="t45" data-transition="fade" style="background:#F3F0E8;color:#14193A;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#2748C9">Görev 4 ve 5 · her biri %10</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1">Bulunacak bir deadlock, kaybedilecek bir kaptan</h2>
+<div style="display:flex;gap:28px;flex:1">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FFFFFF;padding:32px;border-radius:16px;border-top:6px solid #C2410C">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#C2410C">4 · Deadlock’u bul</h3>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;color:#14193A;background:#F3F0E8;padding:12px 18px;border-radius:8px">./swapstress row 8 2</p>
+<ul style="font-size:28px;line-height:1.45;color:#14193A">
+<li>grid_swap iki satırı kilitler. Satır modunda <b>takılır</b></li>
+<li>Takılan thread’leri göster: gdb -p, thread apply all bt</li>
+<li>Hangi Coffman koşulunu bozduğunu söyle; kilit sıralamasıyla düzelt</li>
+<li>Çözümünün neden livelock’a yol açmadığını açıkla</li>
+</ul>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FFFFFF;padding:32px;border-radius:16px;border-top:6px solid #2748C9">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#2748C9">5 · Kaptan düştü</h3>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;color:#14193A;background:#F3F0E8;padding:12px 18px;border-radius:8px">./center --battery 1:20</p>
+<ul style="font-size:28px;line-height:1.45;color:#14193A">
+<li>Poll ile değil, <b>pipe üzerindeki EOF</b> ile fark et. “captain 1 went dark” yazdır</li>
+<li><b>waitpid</b>, pipe’ları kapat: zombie yok</li>
+<li>Saat döngüsünü (st_cv) uyandır ki beklemeyi bıraksın</li>
+<li>Yeniden başlat: ASSIGN, sonraki beat’ten itibaren THEME; topluluk evde başlar</li>
+</ul>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#55597A">BIL 322 · Swarm Faz 1 laboratuvarı</p>
+<aside>Görev 4: hazır verilen grid_swap iki hücreyi takas eder ve iki satırı da kilitler. İki thread aynı satır çiftini ters sırada takas ederse her biri bir kilidi tutar ve diğerini bekler: deadlock. swapstress bunu satır modunda saniyeler içinde yeniden üretir; global modda takılmaz. Takılan thread'leri gdb'de göster, bozduğun Coffman koşulunu söyle (döngüsel bekleme, kilit sıralamasıyla bozulur: her zaman önce küçük numaralı satırı kilitle) ve çözümünün neden livelock'a yol açmadığını açıkla. Görev 5: --battery 1:20 ile başlatılan leader, 20. beat başlarken çökmüş gibi çıkar. Center bunu pipe üzerindeki EOF ile fark etmeli, süreci waitpid ile toplamalı (zombie olmasın), pipe'ın iki ucunu da kapatmalı ve ondan ACK bekleyen saat döngüsünü uyandırmalı. Yeniden başlatma (varsayılan) ile bölge için yeni bir kaptan başlatılır: ASSIGN, sonra sonraki beat'ten itibaren THEME. Yeni topluluk evde başlar; bu yüzden hız denetimi bir sıçramayı affeder (skip_speed), ama çarpışmalar asla affedilmez. --no-restart ile bölge yalnızca gitmiş olarak işaretlenir. Raporda: dansçılar süreç olsaydı ne farklı olurdu? Bu Faz 3'ün konusu.</aside>
+</section>

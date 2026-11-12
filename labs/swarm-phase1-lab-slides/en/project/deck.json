@@ -1,0 +1,22 @@
+{
+  "v": 4,
+  "createdOnFiles": { "v": 1, "at": "2026-11-12T06:10:00Z" },
+  "lists": "css",
+  "title": "Swarm Phase 1 lab briefing",
+  "order": [
+    "cover", "story", "result", "phases", "architecture", "protocol", "beat", "tasks",
+    "t1-queue", "t2-planner", "t3-grid", "t45", "captain-down", "start", "grading", "pitfalls"
+  ],
+  "sections": {
+    "s1": { "description": "What the project is and what it looks like when it works.", "start": "cover" },
+    "s2": { "description": "How Phase 1 is built: architecture, protocol and one beat.", "start": "architecture" },
+    "s3": { "description": "What you have to do: the six tasks.", "start": "tasks" },
+    "s4": { "description": "How to start, how you are graded, and where it hangs.", "start": "start" }
+  },
+  "faces": {
+    "space-grotesk": { "family": "Space Grotesk", "href": "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400..700&display=swap" },
+    "inter": { "family": "Inter", "href": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" },
+    "jetbrains-mono": { "family": "JetBrains Mono", "href": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" }
+  },
+  "designSystems": []
+}

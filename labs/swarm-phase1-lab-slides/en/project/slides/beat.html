@@ -1,0 +1,22 @@
+<section id="beat" data-transition="fade" style="background:#0B1020;color:#E8ECFA;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#FFC857">How it works</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#F4F6FF">One beat, step by step</h2>
+<div style="display:flex;gap:48px;flex:1">
+<div style="flex:1;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;gap:24px;align-items:center"><p style="width:56px;height:56px;border-radius:50%;background:#FFC857;color:#0B1020;font-size:30px;font-weight:600;text-align:center;line-height:56px">1</p><p style="flex:1;font-size:30px;line-height:1.35">Center sends <b>BEAT b</b> (only after the ACK for b−1).</p></div>
+<div style="display:flex;gap:24px;align-items:center"><p style="width:56px;height:56px;border-radius:50%;background:#FFC857;color:#0B1020;font-size:30px;font-weight:600;text-align:center;line-height:56px">2</p><p style="flex:1;font-size:30px;line-height:1.35">Each follower finds its target for b in the stored plan (no plan: hold).</p></div>
+<div style="display:flex;gap:24px;align-items:center"><p style="width:56px;height:56px;border-radius:50%;background:#5CE1E6;color:#0B1020;font-size:30px;font-weight:600;text-align:center;line-height:56px">3</p><p style="flex:1;font-size:30px;line-height:1.35"><b>Release</b> the cell you are in, then wait at the <b>barrier</b>.</p></div>
+<div style="display:flex;gap:24px;align-items:center"><p style="width:56px;height:56px;border-radius:50%;background:#5CE1E6;color:#0B1020;font-size:30px;font-weight:600;text-align:center;line-height:56px">4</p><p style="flex:1;font-size:30px;line-height:1.35"><b>Claim</b> the target cell in the grid, then the <b>barrier</b> again.</p></div>
+<div style="display:flex;gap:24px;align-items:center"><p style="width:56px;height:56px;border-radius:50%;background:#FF853F;color:#0B1020;font-size:30px;font-weight:600;text-align:center;line-height:56px">5</p><p style="flex:1;font-size:30px;line-height:1.35">The thread the barrier names sends the <b>POS</b> lines and <b>ACK b</b>.</p></div>
+<div style="display:flex;gap:24px;align-items:center"><p style="width:56px;height:56px;border-radius:50%;background:#FF853F;color:#0B1020;font-size:30px;font-weight:600;text-align:center;line-height:56px">6</p><p style="flex:1;font-size:30px;line-height:1.35">Center audits collisions and speed, then sends BEAT b+1.</p></div>
+</div>
+<div style="width:560px;display:flex;flex-direction:column;gap:20px;background:#151C38;padding:36px;border-radius:16px;align-self:flex-start">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#5CE1E6">Why two barriers?</h3>
+<p style="font-size:28px;line-height:1.45;color:#E8ECFA">In one beat, follower A may move into the cell follower B is leaving.</p>
+<p style="font-size:28px;line-height:1.45;color:#E8ECFA">All releases must happen before any claim, or A’s claim fails by accident.</p>
+<p style="font-size:28px;line-height:1.45;color:#9AA6CC">A failed claim is a safety violation, never something to retry in a loop.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#7E8AB5">BIL 322 · Swarm Phase 1 lab</p>
+<aside>This is the heart of Tasks 3 and 5. The center sends BEAT b to every leader, and never sends b+1 before it has the ACK for b: that keeps everyone in lockstep. In the leader, the main thread publishes the beat; each follower wakes up, looks up its target in the stored plan, and holds its position if there is no plan. Then two phases separated by barriers. Phase 1: everyone releases the cell it is in; barrier. Phase 2: everyone claims its target cell; barrier. Why two? Followers move at the same time. If A wants the cell that B is leaving, A’s claim would fail if B had not released it yet. With a barrier in between, all releases happen before any claim. After the second barrier, pthread_barrier_wait returns PTHREAD_BARRIER_SERIAL_THREAD to exactly one thread; that thread sends the POS lines for all followers and then the ACK. A failed claim is a safety violation, never something to retry in a loop. Think about it: what happens if one follower returns early and skips a barrier? Everyone else waits forever.</aside>
+</section>

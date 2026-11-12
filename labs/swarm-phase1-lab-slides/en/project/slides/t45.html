@@ -1,0 +1,28 @@
+<section id="t45" data-transition="fade" style="background:#F3F0E8;color:#14193A;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#2748C9">Tasks 4 and 5 · 10% each</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1">A deadlock to find, a captain to lose</h2>
+<div style="display:flex;gap:28px;flex:1">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FFFFFF;padding:32px;border-radius:16px;border-top:6px solid #C2410C">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#C2410C">4 · Find the deadlock</h3>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;color:#14193A;background:#F3F0E8;padding:12px 18px;border-radius:8px">./swapstress row 8 2</p>
+<ul style="font-size:28px;line-height:1.45;color:#14193A">
+<li>grid_swap locks two rows. In row mode it <b>hangs</b></li>
+<li>Show the stuck threads: gdb -p, thread apply all bt</li>
+<li>Name the Coffman condition you break; fix it with a lock ordering</li>
+<li>Explain why your fix cannot livelock</li>
+</ul>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FFFFFF;padding:32px;border-radius:16px;border-top:6px solid #2748C9">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#2748C9">5 · Captain down</h3>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;color:#14193A;background:#F3F0E8;padding:12px 18px;border-radius:8px">./center --battery 1:20</p>
+<ul style="font-size:28px;line-height:1.45;color:#14193A">
+<li>Notice by <b>EOF on the pipe</b>, not by polling. Print “captain 1 went dark”</li>
+<li><b>waitpid</b>, close the pipes: no zombie</li>
+<li>Wake the clock loop (st_cv) so it stops waiting</li>
+<li>Restart: ASSIGN, THEME from the next beat; the troupe starts at home</li>
+</ul>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#55597A">BIL 322 · Swarm Phase 1 lab</p>
+<aside>Task 4: the given grid_swap exchanges two cells and locks both rows. If two threads swap the same pair of rows in opposite orders, each holds one lock and waits for the other: a deadlock. swapstress reproduces it in seconds in row mode; in global mode it does not hang. Show the stuck threads in gdb, name the Coffman condition you break (circular wait, broken by a lock ordering: always lock the lower row first), and explain why your fix cannot cause a livelock. Task 5: the leader started with --battery 1:20 exits when beat 20 starts, as if it crashed. The center must notice through EOF on the pipe, reap the process with waitpid so there is no zombie, close both pipe ends, and wake the clock loop that may be waiting for an ACK from it. With restart (the default) it starts a new captain for the zone: ASSIGN, then THEME from the next beat on. The new troupe starts at home, so the speed audit forgives one jump (skip_speed), but collisions are never forgiven. With --no-restart the zone is just marked gone. In the report: what would be different if the performers were processes? That is Phase 3.</aside>
+</section>

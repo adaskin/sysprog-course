@@ -1,0 +1,24 @@
+<section id="t3-grid" data-transition="fade" style="background:#0B1020;color:#E8ECFA;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#FFC857">Görev 3 · %25</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#F4F6FF">Birlikte adım atan dansçılar ve ızgara</h2>
+<div style="display:flex;gap:28px;flex:1">
+<div style="flex:1;display:flex;flex-direction:column;gap:18px;background:#151C38;padding:32px;border-radius:16px;border-top:6px solid #5CE1E6">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#5CE1E6">Doluluk ızgarası</h3>
+<p style="font-size:26px;color:#9AA6CC">grid_claim, grid_release, grid_owner</p>
+<ul style="font-size:28px;line-height:1.45;color:#E8ECFA">
+<li>Hücre başına bir drone, her leader’ın bölgesinde</li>
+<li>İki mod: ızgara için <b>tek mutex</b> veya <b>satır başına bir mutex</b></li>
+<li>Okuyucu da kilitlemeli. Neden?</li>
+<li>make bench ikisini 1, 2, 4, 8 thread ile ölçer. Tabloyu rapora koy ve <b>açıkla</b></li>
+</ul>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:18px;background:#151C38;padding:32px;border-radius:16px;border-top:6px solid #FF853F">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#FF853F">follower_main</h3>
+<p style="font-size:26px;color:#9AA6CC">sırayla her beat b için</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.55;color:#E8ECFA;background:#0B1020;padding:20px 24px;border-radius:10px">BEAT b’yi bekle<br>hedef = plan veya bekle<br>release(eski hücre)<br>barrier<br>claim(hedef)<br>barrier<br>serial thread: POS satırları, ACK</p>
+<p style="font-size:28px;line-height:1.4;color:#E8ECFA">Başarısız claim = güvenlik ihlali: say, logla, olduğun yerde kal.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#7E8AB5">BIL 322 · Swarm Faz 1 laboratuvarı</p>
+<aside>Doluluk ızgarası: tüm ızgara için tek mutex ile satır başına bir mutex. claim, release ve owner'ı iki mod için de yaz. Okuyucu da kilitlemeli: kilitsiz okuyucu yarım güncellenmiş bir durum görebilir; bu bir data race'tir. make bench, rastgele claim ve release işlemlerini her iki modda 1, 2, 4 ve 8 thread ile çalıştırır. Tabloyu raporuna koy ve kendi sayılarını açıkla: sayılar makinene ve çekirdeklerine bağlıdır (tek mutex üzerindeki çekişme, neyin ölçeklendiği ve darboğaz başka nerede olabileceği). Tempo 0'daki gösterinin süresini planlayıcının düşünme süresi belirler; bu yüzden orada ızgara darboğaz değildir. İkinci kısım: beat slaytındaki iki barrier ile follower_main. Geçerli bir planla claim asla başarısız olmaz; olursa bir güvenlik ihlalidir, o yüzden say ve logla.</aside>
+</section>

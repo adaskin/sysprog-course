@@ -1,0 +1,28 @@
+<section id="t1-queue" data-transition="fade" style="background:#0B1020;color:#E8ECFA;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:28px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#FFC857">Görev 1 · %20</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#F4F6FF">Sınırlı kuyruk</h2>
+<div style="display:flex;gap:40px;flex:1">
+<div style="width:1000px;display:flex;flex-direction:column;gap:20px">
+<div style="background:#151C38;padding:32px;border-radius:16px;display:flex;flex-direction:column;gap:10px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#5CE1E6">queue_t *queue_create(size_t cap, size_t item_size);</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#E8ECFA">int  queue_push(queue_t *q, const void *item);<span style="color:#7E8AB5">  // doluysa bekler</span></p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#E8ECFA">int  queue_try_push(queue_t *q, const void *item);<span style="color:#7E8AB5">  // doluysa -1</span></p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#E8ECFA">int  queue_pop(queue_t *q, void *out);<span style="color:#7E8AB5">  // boşsa bekler</span></p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#E8ECFA">void queue_close(queue_t *q);<span style="color:#7E8AB5">  // herkesi uyandırır</span></p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#E8ECFA">size_t queue_size(queue_t *q);  void queue_destroy(queue_t *q);</p>
+</div>
+<p style="font-size:30px;line-height:1.4;color:#B9C3E8">İki yerde kullanılır: center’ın <b style="color:#E8ECFA">istek kuyruğu</b> (try_push, doluysa BUSY) ve leader’ın tema kuyruğu.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:18px;background:#151C38;padding:32px;border-radius:16px;align-self:flex-start">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#FFC857">Kurallar</h3>
+<ul style="font-size:30px;line-height:1.45;color:#E8ECFA">
+<li>Her pthread_cond_wait’in etrafında if değil <b>while</b></li>
+<li>close’dan sonra: pop kalanları boşaltır, sonra −1 döner; push −1 döner</li>
+<li>close <b>herkesi</b> uyandırır: broadcast</li>
+<li>Meşgul bekleme (busy-waiting) yok, sleep yok</li>
+</ul>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1000px;font-size:24px;color:#7E8AB5">BIL 322 · Swarm Faz 1 laboratuvarı</p>
+<aside>Görev 1, derste gördüğün klasik sınırlı tampon (bounded buffer): bir mutex ve condition variable'larla halka tampon. İki condition variable (dolu değil, boş değil) mantığı okunur kılar. Öğeler değerle kopyalanır; bu yüzden aynı kuyruk int'leri, istekleri ve temaları taşıyabilir. while kullan: sahte uyanmalar (spurious wakeup) var ve başka bir thread öğeyi senden önce alabilir. queue_close'dan sonra pop kalan öğeleri döndürmeye devam eder, sonra başarısız olur; böylece worker'lar kuyruğu boşaltıp çıkar. push ise hemen başarısız olur; push'ta zaten bloke olmuş bir thread için de. close herkesi uyandırmalı: signal değil broadcast. Meşgul bekleme ve sleep yok. Projenin geri kalanı yokken kuyruğu tests/test_queue ile tek başına test edebilirsin.</aside>
+</section>
