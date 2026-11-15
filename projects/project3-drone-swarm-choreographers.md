@@ -3,13 +3,12 @@
 **Course:** BIL 322 System Programming
 **Topic:** Processes, threads, synchronization, IPC, shared memory, sockets, signals — all in one system
 **Mode:** Pairs (individual allowed; expectations are the same)
-**Duration:** 3 phases, about 1 week each (details of each phase are refined when it is assigned)
+**Duration:** 3 phases: Phase 1 (1 week); Phases 2 and 3 assigned together in one skeleton, due Thursday 26 November and Thursday 10 December 2026
 **AI use:** Allowed, but must be disclosed and you must be able to explain all code
 
-> **Status: Phase 1 is final** (the protocol of Section 3 is frozen, and the Phase 1 skeleton
-> is in [`labs/swarm-phase1-skeleton/`](../labs/swarm-phase1-skeleton/)). Phases 2 and 3 are
-> drafts: the instructor adjusts their details, and releases their skeleton code, in the week
-> each one is assigned.
+> **Status: final.** Phase 1's skeleton is in [`labs/swarm-phase1-skeleton/`](../labs/swarm-phase1-skeleton/);
+> Phases 2 and 3 share one skeleton, [`labs/swarm-phase2-3-skeleton/`](../labs/swarm-phase2-3-skeleton/).
+> The protocol of Section 3 is frozen; Phase 3 only adds the messages marked "Phase 3".
 
 ---
 
@@ -84,7 +83,7 @@ troupe? That question is the heart of this project, and it gets harder every pha
 | Memory pools (Week 6, Lab 6) | The choreographer gives every planning request its KV blocks from the pool and an arena |
 | Threads, mutexes, condition variables, semaphores, barriers | Performers in lockstep, task and request queues, thread pool |
 | Deadlock, livelock, starvation | Two performers swapping places, full queues, retry storms |
-| Shared memory, `mmap` (Week 12) | The shared stage, the broadcast booth as a separate process |
+| Shared memory, `mmap`, FIFOs, message queues (Week 12) | The stage bus to the broadcast booth (a separate process), the operator's control channel, the flight recorder |
 | Sockets (Week 13) | Every link in the final phase |
 | Signals (Week 14) | Graceful shutdown, dead-captain detection |
 
@@ -138,33 +137,39 @@ section finale 32  55 mosaic triumphant
 - **Batteries:** every captain has a battery budget in beats (`--battery`). When it reaches
   zero the captain goes dark, in the middle of the show.
 
-### One protocol, three transports
+### One protocol, one channel API, three phases of transports
 
-The same messages travel over *pipes* in Phase 1, *pipes + shared memory* in Phase 2, and
-*TCP sockets* in Phase 3. If you write your send/receive code against a file descriptor
-and keep protocol parsing separate from the transport, Phase 3 is a small change, not a
-rewrite.
+The same messages travel over *pipes* in Phase 1 and over *TCP sockets* in Phase 3. Phase 2
+puts every link behind **one channel API** (`chan_open`, `chan_send`, `chan_recv`, `chan_close`;
+the transport is chosen by an address such as `"shm:NAME"`, `"fifo:NAME"`, `"file:PATH"` or, in
+Phase 3, `"tcp:HOST:PORT"` and `"udp:HOST:PORT"`) and adds three links: a **stage bus** in shared
+memory that carries a `Frame` to every viewer after each beat, a **control channel** for operator
+commands, and a **flight recorder** file. Because protocol parsing is separate from the transport,
+Phase 3 adds two transports and a server, not a rewrite.
 
 | | Phase 1: rehearsal | Phase 2: dress rehearsal | Phase 3: show night |
 |---|---|---|---|
 | Center | parent process | parent process | server process |
 | Leader | child process (`fork`/`exec`) | child process | client process (own socket) |
-| Follower | **thread** inside its captain | thread inside its captain | **separate process**, socket to its captain |
-| Viewer | the stage drawn as ASCII in the center's terminal (`--ascii`) | **separate process**, reads shared memory (SDL, GTK, or Qt) | separate process, socket client |
-| Center ↔ leader | pipes | pipes + shared stage | TCP |
-| A captain dies... | its threads die with it; the center restarts the captain (its performers start again at home) | same, and the dead captain's cells in the shared stage must be released | **performers survive as orphans** and must be rehomed |
+| Follower | **thread** inside its captain | thread inside its captain | **separate process** (`bin/performer`), UDP datagrams to its captain; the captain's follower threads still plan and claim cells |
+| Viewer | the stage drawn as ASCII in the center's terminal (`--ascii`) | **separate program** that receives a `Frame` per beat from the stage bus (shared memory, written only by the center); a basic SDL2 window is given, yours can use any toolkit | the same program over TCP (`--center HOST:PORT`, the `FRAME` text message); the views do not change |
+| Center ↔ leader | pipes | pipes, through the channel API (`chan_fd`) | TCP (`chan_fd` on a socket); the captain connects back to the center, from any machine |
+| Operator commands | — | `PAUSE`/`RESUME`/`TEMPO`/`KILL`/`STOP` over a FIFO, from `swarmctl` or the viewer | the same lines over TCP (`OPERATE`), each answered `OK` or `ERR` |
+| Recording | — | every frame to a memory-mapped file; the viewer replays it | unchanged |
+| A captain dies... | its threads die with it; the center restarts the captain (its performers start again at home) | same; the booth shows it, and an operator can kill a captain from the booth | **its performer processes survive as orphans**, ask the center for help, and are adopted by the replacement captain |
+| A captain hangs... | the show waits | the show waits | no `HEARTBEAT` for 3 s: the center declares it dead |
 
-In Phase 3 *everything communicates through sockets* — center↔leader, leader↔performer,
-and viewer↔center. Performers become processes in Phase 3 precisely so that a captain's
-death leaves a real orphaned troupe behind (Week 4: when a parent dies, children keep
-running).
+In Phase 3 *everything communicates through sockets*: TCP between the center and everyone else,
+UDP between a captain and its performers (one datagram per message; a lost datagram is resent, not
+fatal). Performers become processes in Phase 3 precisely so that a captain's death leaves a real
+orphaned troupe behind (Week 4: when a parent dies, its children keep running).
 
 ---
 
 ## 3. The Protocol (Frozen)
 
 One message per line, fields separated by single spaces, `\n` terminated, maximum 256
-bytes per line. Unknown messages are ignored and logged, never fatal. A *malformed* known
+bytes per line (over UDP: one message per datagram, no `\n`, at most 512 bytes). Unknown messages are ignored and logged, never fatal. A *malformed* known
 message (wrong field count, not a number, out of range) is rejected, logged, and never crashes
 the receiver; the given `protocol.c` already does this for you.
 
@@ -183,7 +188,8 @@ SHUTDOWN
 ### Leader → Center
 
 ```text
-HELLO <leader_id> <n_followers>
+HELLO <leader_id> <n_followers> [<udp_port>]            Phase 3: the first line, with n 0 and the
+                                                        captain's radio port; again after ASSIGN
 PLAN_REQ <req_id> <section> <n_followers> <style_seed>  commission detailed choreography
 READY <leader_id> <section>                             positions for this section are loaded
 POS <leader_id> <beat> <follower> <x> <y> <color>       where a performer is after this beat
@@ -206,26 +212,62 @@ trusting the captains; the center never sends `BEAT n+1` before it has the `ACK`
 A plan is **dense**: it has exactly one keyframe for every beat of the section and every
 performer (`n_followers × (end − start + 1)` lines), in beat order. The validator checks this.
 
-### Leader ↔ Follower (Phase 3 only; in Phases 1-2 these are function calls and a barrier)
+### Leader ↔ Performer: the radio (Phase 3, UDP; in Phases 1-2 these are function calls and a barrier)
 
 ```text
-NEXT <follower_id> <beat>                performer asks for its target for this beat
-GOTO <x> <y> <color>                     captain's answer
-AT <follower_id> <beat> <x> <y>          performer reports where it is
+NEXT <follower_id> <beat>                    performer: ready for this beat (also: "are you there?")
+GOTO <follower_id> <beat> <x> <y> <color>    captain: be there on this beat (resent until AT comes)
+AT <follower_id> <beat> <x> <y>              performer: I am there
+WAIT <follower_id> <beat>                    captain: alive, that beat has not started yet
+LAND <follower_id>                           captain or center: the show is over for you, exit
 ```
 
-### Orphan rescue (Phase 3)
+Every message carries the beat, so a duplicate or a late datagram is recognized and ignored. A
+performer that hears nothing from its captain for about 1.5 s (or whose datagrams come back as
+"port unreachable") is an **orphan**.
+
+### Orphan rescue (Phase 3, TCP)
 
 ```text
-ORPHANED <follower_id> <old_leader_id> <last_beat>     performer → center
-REHOME <follower_id> <leader_host> <leader_port>       center → performer
+ORPHANED <follower_id> <old_leader_id> <last_beat>     performer → center (its own short connection)
+REHOME <follower_id> <leader_host> <udp_port>          center → performer: your new captain's radio
+LAND <follower_id>                                     center → performer: nobody will adopt you
 ```
 
-### Center → Broadcast Booth (Phase 3)
+Before it answers `REHOME`, the center sends `ADOPT <follower_id>` to the adopting captain (the
+replacement of the dead one), so that the captain expects the performer.
+
+### The first line of a TCP connection to the center (Phase 3)
 
 ```text
-FRAME <beat> <w> <h>                     followed by h lines of w color digits
-DRONE <id> <x> <y> <role>                one line per drone, after the frame
+HELLO ...        a captain (above)
+WATCH            a viewer: FRAME messages follow, newest frame wins
+OPERATE          an operator: one command per line follows; each is answered OK or ERR <reason>
+ORPHANED ...     an orphaned performer (above)
+QUERY            bonus: questions follow (DRONES, DRONE <id>, CAPTAIN <id>), each answered at once
+                 with the drones' coordinates in the newest frame (Phase 3 handout, B7)
+```
+
+### Operator → Center (Phase 2 and 3)
+
+```text
+PAUSE | RESUME | TEMPO <bpm> | KILL <leader_id> | STOP
+```
+
+Sent by `swarmctl` and by the viewer's controls on the control channel. A bad command is
+rejected and logged; it never changes the show.
+
+### Center → Broadcast Booth (Phases 2 and 3)
+
+In Phase 2 the center publishes a `Frame` (`common/frame.h`: beat, section, tempo, flags,
+captains alive, counters, and one `x y color leader state` entry per drone) on the stage bus
+in shared memory. In Phase 3 the same frame travels over TCP as text, so it can be watched with `nc`:
+
+```text
+FRAME <beat> <last_beat> <w> <h> <tempo> <paused> <finished> <section> <section_name> <theme>
+      <alive_mask> <collisions> <speed_violations> <busy> <late> <restarts> <n_leaders>
+      <n_followers> <n>                   (one line)
+D <x> <y> <color> <leader> <state>       n lines, one per drone, after the FRAME line
 ```
 
 The booth only needs to *eventually* show the latest state. If it is slow, it misses
@@ -250,26 +292,34 @@ whole troupe freezing (deadlock), and make the center notice and restart a dead 
 The skeleton gives you the protocol, planner, validator, clock loop and tests; you build the
 queue, the planner pipeline, the grid, the performers and the restart.
 
-### Phase 2 — Dress Rehearsal, a Shared Stage
+### Phase 2 — Dress Rehearsal, a Shared Stage and a Broadcast Booth
 
 **After:** Week 12 (virtual memory and IPC)
-**Details:** `labs/swarm-phase2-ipc-shared-stage.md`
+**Details:** [`labs/swarm-phase2-ipc-shared-stage.md`](../labs/swarm-phase2-ipc-shared-stage.md)
 
-The stage moves into `mmap`ed shared memory so captains place dancers directly and the
-center stops being a bottleneck. The broadcast booth becomes a separate read-only process.
-Two dancers must never take the same spot at the same instant — and a captain that dies
-holding the stage lock must not freeze the show.
+The model and the view are separated. The center publishes the whole stage as a `Frame` after
+every beat on a **stage bus** in shared memory (one writer, any number of readers, the newest
+frame wins, a sequence lock instead of a lock between processes), and the broadcast booth becomes
+a **separate program** with your own GUI. A slow, frozen or killed viewer must never slow the
+show down. Operators pause, change the tempo, kill a captain or stop the show through a
+**control channel** (a FIFO), from the command line or from the booth's buttons, and a
+**flight recorder** keeps every frame in a memory-mapped file for replays. All links, including
+the captains' pipes, go through one channel API, so Phase 3 only adds a TCP transport.
 
 ### Phase 3 — Show Night, Everything Wireless
 
 **After:** Week 13-14 (sockets, signals)
-**Details:** `labs/swarm-phase3-sockets-signals.md`
+**Details:** [`labs/swarm-phase3-sockets-signals.md`](../labs/swarm-phase3-sockets-signals.md)
 
-Every link is a socket. Performers are separate processes. Drones die — dead batteries,
-lost signal. The swarm must notice a silent captain, rehome its orphaned troupe, and
-finish the picture. A captain that cannot reach the choreographer keeps dancing in a
-simple **local fallback routine** (no protocol change). The final run is one full song:
-start the whole swarm with one command and form the target image before the last note.
+Every link is a socket. The center is a TCP server on one port: captains connect back to it
+(from the same machine or another one), viewers watch the show with `WATCH`, operators send
+commands with `OPERATE`. Performers are separate processes that talk to their captain over UDP,
+so datagrams get lost and must be resent. Drones die: dead batteries, `SIGKILL`, a captain frozen
+with `SIGSTOP`. The center notices a silent captain (heartbeats), the orphaned performers find
+the replacement captain through the center, and the picture still forms. `Ctrl-C` ends everything,
+on every machine, within 2 seconds. A load test measures where the system runs out of breath. A
+**local fallback routine** for a captain that cannot reach the choreographer, and a **view API**
+(the center answers requests with the coordinates of every drone), are bonuses.
 
 ---
 
@@ -308,12 +358,12 @@ function, or write a plan by hand and feed it through the protocol.
 
 ## 6. Constraints
 
-- C only (the booth may use SDL2, GTK, or Qt).
+- C only (the booth may use SDL2, raylib, GTK, or Qt; Qt code may be C++ in its one view file).
 - Follow the [secure C rules](../labs/secure-c-programming-rules-for-assignments.md).
 - No busy-waiting. Use condition variables, semaphores, barriers, or blocking I/O.
 - Valgrind (and ThreadSanitizer for Phases 1-2) must be clean on the headless test mode
-  (Phase 1: `make test`, `make tsan`; later phases add `--no-gui`). Every program must run
-  without a display.
+  (`make test`, `make test3`, `make tsan`). Every program must run without a display (Phase 2: the viewer's
+  `check`, `ascii` and `ppm` views).
 - Every protocol parser must reject malformed and over-long lines without crashing.
 
 ---
@@ -323,10 +373,10 @@ function, or write a plan by hand and feed it through the protocol.
 | Phase | Weight |
 |---|---|
 | Phase 1: threads, queues, barrier, occupancy grid, captain restart, report | 30% |
-| Phase 2: shared memory, independent booth, collision test, dead-captain test | 30% |
-| Phase 3: sockets, signals, orphan rescue, fallback routine, load test | 30% |
+| Phase 2: shared-memory stage bus, your GUI booth, control channel, flight recorder, tests | 30% |
+| Phase 3: TCP and UDP transports, the TCP server, performer processes, heartbeats and orphan rescue, load test | 30% |
 | Final demo and report | 10% |
-| Bonus (real model behind the choreographer, new themes, nicer visuals) | up to +15% |
+| Bonus (real model behind the choreographer, a view API, new themes, nicer visuals) | up to +15% |
 
 The **performance score** (fraction of keyframes reached on their beat, the mosaic accuracy
 in the finale, and the number of safety violations, which must be zero) is reported in each
@@ -340,7 +390,7 @@ phase; correctness of the concurrency and fault handling is what is graded.
 |---|---|
 | Score and image loaders, `planner.h`, the stub choreographer | Transport layer, queues, stage, drones |
 | The plan validator (speed, collision, zone) | Captain and performer logic |
-| Starter viewer (Phase 2) | Booth changes for each phase |
+| The channel API with the pipe transport, the viewer program with terminal/text/picture/test views and a basic SDL2 window, `swarmctl` (Phase 2); the socket API additions, the `FRAME` text format, the captains' TCP connection and failover, the load-test script (Phase 3) | The shared-memory, FIFO and file transports and your GUI view (Phase 2); the TCP and UDP transports, the center's TCP server, the captain's radio, the performer program, heartbeats and orphan rescue (Phase 3) |
 | Test scores and a headless test harness | Your own tests and the report |
 
 You may reuse your Lab 4 orchestrator, Lab 5 pipes, and Lab 6 pool. Earlier years' drone

@@ -1,0 +1,10 @@
+# long.score — 144 beats; used by `make bench`.
+stage 64 36
+tempo 120
+image data/images/wave64x36.pgm
+
+section intro    0  31 dawn   calm
+section verse   32  63 waves  energetic
+section chorus  64  95 waves  triumphant
+section bridge  96 111 hold   calm
+section finale 112 143 mosaic triumphant

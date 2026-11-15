@@ -1,0 +1,19 @@
+# build products (all programs go to bin/)
+bin/
+tests/test_protocol
+tests/test_planner
+tests/test_queue
+tests/test_queue_tsan
+tests/test_chan
+*.o
+
+# logs written by the test script and `make demo`
+tests/logs/
+demo.log
+
+# recordings and pictures (show.sh, make demo, the ppm view)
+*.rec
+*.ppm
+frames.txt
+show.png
+show.gif
