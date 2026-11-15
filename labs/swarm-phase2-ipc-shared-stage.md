@@ -1,7 +1,7 @@
 # Swarm Phase 2: One Channel API, a Shared Stage, and an Independent Broadcast Booth
 
 **BIL 322 System Programming — Final Project, Phase 2**
-**Duration:** until Thursday 19 November (assigned together with [Phase 3](swarm-phase3-sockets-signals.md), due 3 December, in the same repository)
+**Duration:** until Thursday 26 November (assigned together with [Phase 3](swarm-phase3-sockets-signals.md), due 10 December, in the same repository)
 **Project:** [Autonomous Drone Swarm Choreographers](../projects/project3-drone-swarm-choreographers.md)
 **Skeleton code:** [`labs/swarm-phase2-3-skeleton/`](swarm-phase2-3-skeleton/) (read its `README.md` first)
 **Submission:** GitHub Classroom (repository) + Google Classroom link
@@ -518,7 +518,7 @@ paused clock or the viewer), a viewer that includes center or leader code, objec
 
 ## 🔭 Where This Goes Next
 
-[Phase 3](swarm-phase3-sockets-signals.md) (same repository, due 3 December) adds two transports,
+[Phase 3](swarm-phase3-sockets-signals.md) (same repository, due 10 December) adds two transports,
 `tcp:HOST:PORT` and `udp:HOST:PORT`, and puts the whole show on the network: captains, viewers and
 operators connect to the center over TCP, and every performer becomes a separate process that talks
 to its captain over UDP. Nothing from this phase is thrown away: your Phase 2 transports keep working

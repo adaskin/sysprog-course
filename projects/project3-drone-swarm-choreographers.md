@@ -3,7 +3,7 @@
 **Course:** BIL 322 System Programming
 **Topic:** Processes, threads, synchronization, IPC, shared memory, sockets, signals — all in one system
 **Mode:** Pairs (individual allowed; expectations are the same)
-**Duration:** 3 phases: Phase 1 (1 week); Phases 2 and 3 assigned together in one skeleton, due Thursday 19 November and Thursday 3 December 2026
+**Duration:** 3 phases: Phase 1 (1 week); Phases 2 and 3 assigned together in one skeleton, due Thursday 26 November and Thursday 10 December 2026
 **AI use:** Allowed, but must be disclosed and you must be able to explain all code
 
 > **Status: final.** Phase 1's skeleton is in [`labs/swarm-phase1-skeleton/`](../labs/swarm-phase1-skeleton/);
@@ -244,6 +244,8 @@ HELLO ...        a captain (above)
 WATCH            a viewer: FRAME messages follow, newest frame wins
 OPERATE          an operator: one command per line follows; each is answered OK or ERR <reason>
 ORPHANED ...     an orphaned performer (above)
+QUERY            bonus: questions follow (DRONES, DRONE <id>, CAPTAIN <id>), each answered at once
+                 with the drones' coordinates in the newest frame (Phase 3 handout, B7)
 ```
 
 ### Operator → Center (Phase 2 and 3)
@@ -316,7 +318,8 @@ so datagrams get lost and must be resent. Drones die: dead batteries, `SIGKILL`,
 with `SIGSTOP`. The center notices a silent captain (heartbeats), the orphaned performers find
 the replacement captain through the center, and the picture still forms. `Ctrl-C` ends everything,
 on every machine, within 2 seconds. A load test measures where the system runs out of breath. A
-**local fallback routine** for a captain that cannot reach the choreographer is a bonus.
+**local fallback routine** for a captain that cannot reach the choreographer, and a **view API**
+(the center answers requests with the coordinates of every drone), are bonuses.
 
 ---
 
@@ -373,7 +376,7 @@ function, or write a plan by hand and feed it through the protocol.
 | Phase 2: shared-memory stage bus, your GUI booth, control channel, flight recorder, tests | 30% |
 | Phase 3: TCP and UDP transports, the TCP server, performer processes, heartbeats and orphan rescue, load test | 30% |
 | Final demo and report | 10% |
-| Bonus (real model behind the choreographer, new themes, nicer visuals) | up to +15% |
+| Bonus (real model behind the choreographer, a view API, new themes, nicer visuals) | up to +15% |
 
 The **performance score** (fraction of keyframes reached on their beat, the mosaic accuracy
 in the finale, and the number of safety violations, which must be zero) is reported in each

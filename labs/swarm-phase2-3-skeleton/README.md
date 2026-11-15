@@ -4,8 +4,8 @@ BIL 322, Final Project (Autonomous Drone Swarm Choreographers), Phases 2 and 3, 
 
 | Phase | Handout | Due |
 |---|---|---|
-| 2: IPC — a shared stage, a control channel, a recorder, your booth | `labs/swarm-phase2-ipc-shared-stage.md` | Thursday 19 November 2026 |
-| 3: sockets — TCP and UDP transports, the center as a server, performer processes, orphan rescue | `labs/swarm-phase3-sockets-signals.md` | Thursday 3 December 2026 (checkpoint 26 November: Task 1) |
+| 2: IPC — a shared stage, a control channel, a recorder, your booth | `labs/swarm-phase2-ipc-shared-stage.md` | Thursday 26 November 2026 |
+| 3: sockets — TCP and UDP transports, the center as a server, performer processes, orphan rescue | `labs/swarm-phase3-sockets-signals.md` | Thursday 10 December 2026 (checkpoint 3 December: Task 1) |
 
 The project is in `projects/project3-drone-swarm-choreographers.md`. The Phase 2 handout's section
 "The Source Tree" explains every file, the threads, and the path of a frame from the center to your

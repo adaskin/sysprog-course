@@ -1,7 +1,7 @@
 # Swarm Phase 3: Show Night, Everything Over Sockets
 
 **BIL 322 System Programming — Final Project, Phase 3**
-**Duration:** after Phase 2, until **Thursday 3 December 2026**. Checkpoint **Thursday 26 November**:
+**Duration:** after Phase 2, until **Thursday 10 December 2026**. Checkpoint **Thursday 3 December**:
 Task 1 (the `tcp:` and `udp:` transports) passes `tests/test_chan net`.
 **Project:** [Autonomous Drone Swarm Choreographers](../projects/project3-drone-swarm-choreographers.md)
 **Skeleton code:** the same repository as [Phase 2](swarm-phase2-ipc-shared-stage.md),
@@ -96,7 +96,7 @@ orphans that end up with it.
 
 ## 🧰 Prerequisites
 
-- Phase 2 (due 19 November), in the same repository: Phase 3 builds on it, and `make test` must
+- Phase 2 (due 26 November), in the same repository: Phase 3 builds on it, and `make test` must
   still pass at the end.
 - Week 13-14 lectures: sockets (TCP and UDP), signals.
 
@@ -130,6 +130,7 @@ The center listens on **one port**. The first line of every connection says who 
 | `WATCH` | a viewer, `swarmctl status` | `FRAME` messages (the text form of a `Frame`), the newest one per viewer |
 | `OPERATE` | an operator | command lines; the center answers each with `OK` or `ERR <reason>` |
 | `ORPHANED <f> <l> <beat>` | an orphaned performer | one answer, `REHOME <f> <host> <port>` or `LAND <f>`, then the connection closes |
+| `QUERY` (bonus B7) | a program with questions | `DRONES`, `DRONE <id>`, `CAPTAIN <l>`; each answered at once with drone coordinates |
 
 ### The channel API grows
 
@@ -251,12 +252,12 @@ tests/      test_chan.c: tcp and udp checks; run_tests.sh phase3 (make test3); l
 
 ## 🚀 Getting Started
 
-**1. Finish Phase 2 first** (19 November). Phase 3 is in the same skeleton; `make` already builds
+**1. Finish Phase 2 first** (26 November). Phase 3 is in the same skeleton; `make` already builds
 `bin/performer` and the new files. Until Task 1 is done, `--port` says
 `cannot serve tcp::0 (Phase 3, Tasks 1 and 2 not done?)` and everything without `--port` works as in
 Phase 2.
 
-**2. Suggested order.** Task 1 → (checkpoint, 26 November) → Task 2 → Task 3 → Task 4 → Task 5.
+**2. Suggested order.** Task 1 → (checkpoint, 3 December) → Task 2 → Task 3 → Task 4 → Task 5.
 Tasks 2 and 3 are independent once Task 1 works: a team of two can split them. Without a radio
 (`radio_open` returns -1) the captains say `no radio ... followers stay threads` and the show runs
 over TCP with Phase 2 followers, so Task 2 can be finished and tested before Task 3.
@@ -281,7 +282,7 @@ make loadtest                                       # the load test (Task 5)
 
 ---
 
-## 🛠️ Task 1: The TCP and UDP Transports (20%, checkpoint 26 November)
+## 🛠️ Task 1: The TCP and UDP Transports (20%, checkpoint 3 December)
 
 Write `common/chan_tcp.c` and `common/chan_udp.c`. Their headers list the rules; `tests/test_chan
 net` checks every one of them (31 checks).
@@ -455,6 +456,28 @@ second machine if possible. Live: show the processes (`pstree`), kill a captain 
   timeouts and `BUSY` when it is slow. The protocol does not change.
 - B6: **The other server model** (Task 2): `poll` or `epoll` instead of threads (or the reverse),
   with a measured comparison at 100 viewers.
+- B7: **A view API.** `WATCH` pushes every frame to a viewer. Add the other style, request and
+  response: a program asks the center a question and gets the coordinates of the drones it asked
+  for, now. A dashboard, a script or a scoring service needs this, not a stream. On the same port,
+  a new first line:
+
+  ```text
+  QUERY                     the first line: questions follow, one per line; the connection stays open
+  DRONES                →   DRONES <beat> <n>, then n lines  P <id> <leader> <x> <y> <color> <state>
+  DRONE <id>            →   P <id> <leader> <x> <y> <color> <state>   (or ERR no such drone)
+  CAPTAIN <leader_id>   →   DRONES <beat> <k>, then the k drones of that captain
+  anything else         →   ERR bad request
+  ```
+
+  `<state>` is a word (`ok`, `lost`, `orphan`). The answers come from the newest frame the center
+  published (`net_publish` already gets every one): copy it under a short lock and answer from the
+  copy, so a question never takes the center's own locks or waits for a beat, and a client that
+  asks and never reads is dropped like a slow viewer. Give `swarmctl` a client
+  (`swarmctl --center HOST:PORT drones [ID | --captain L]`); `nc` works too:
+  `printf 'QUERY\nDRONE 17\n' | nc -q1 127.0.0.1 9000`. Show in your tests that 1000 questions
+  during a tempo-0 show do not slow it down, and that every answer matches the recorded frame of its
+  beat. Going further: answer the same questions over HTTP with JSON (`GET /drones`,
+  `GET /drones/17`, `GET /captains/2/drones`), so `curl` and a browser (B4) can use it.
 
 ## ✅ Grader's Checklist
 
