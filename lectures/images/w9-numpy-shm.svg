@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 420" width="1000" height="420" role="img">
+<defs><marker id="ah3fb950" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3fb950"/></marker><marker id="ahs3fb950" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#3fb950"/></marker><marker id="ahf0883e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f0883e"/></marker><marker id="ahsf0883e" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#f0883e"/></marker></defs>
+<rect x="0" y="0" width="1000" height="420" rx="14" fill="#161b22"/>
+<rect x="20" y="10" width="960" height="400" rx="10" fill="#1c2330"/>
+<text x="500.0" y="36" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="20" font-weight="700" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">multiprocessing.shared_memory + np.ndarray</text>
+<text x="500.0" y="62" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">two processes, one physical buffer, zero copies</text>
+<rect x="50" y="100" width="260" height="110" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="180.0" y="136.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">parent process</text>
+<text x="180.0" y="155.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">a = np.ndarray(...,</text>
+<text x="180.0" y="174.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">buffer=shm.buf)</text>
+<rect x="690" y="100" width="260" height="110" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="820.0" y="136.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">worker process</text>
+<text x="820.0" y="155.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">a = np.ndarray(...,</text>
+<text x="820.0" y="174.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">buffer=shm.buf)</text>
+<rect x="360" y="250" width="280" height="80" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="500.0" y="280.5" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">/dev/shm/psm_3f2a…</text>
+<text x="500.0" y="299.5" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">64 MB float64 frames</text>
+<path d="M 180,210 L 180,290 L 360,290" fill="none" stroke="#f0883e" stroke-width="2" marker-end="url(#ahf0883e)"/>
+<text x="230" y="275" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#f0883e" text-anchor="middle" dominant-baseline="central">mmap</text>
+<path d="M 820,210 L 820,290 L 640,290" fill="none" stroke="#f0883e" stroke-width="2" marker-end="url(#ahf0883e)"/>
+<text x="770" y="275" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#f0883e" text-anchor="middle" dominant-baseline="central">mmap</text>
+<path d="M 310,140 L 690,140" fill="none" stroke="#3fb950" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ah3fb950)"/>
+<text x="500" y="122" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#3fb950" text-anchor="middle" dominant-baseline="central">only shm.name is pickled (~20 bytes) 📛</text>
+<text x="500" y="365" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">np.array(shm.buf) would COPY 📋  ·  np.ndarray(buffer=...) is a VIEW 👀</text>
+</svg>

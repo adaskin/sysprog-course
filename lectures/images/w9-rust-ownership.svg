@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 400" width="1000" height="400" role="img">
+<defs><marker id="ah3fb950" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3fb950"/></marker><marker id="ahs3fb950" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#3fb950"/></marker><marker id="ah58a6ff" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/></marker><marker id="ahs58a6ff" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#58a6ff"/></marker></defs>
+<rect x="0" y="0" width="1000" height="400" rx="14" fill="#161b22"/>
+<rect x="20" y="10" width="470" height="380" rx="10" fill="#1c2330"/>
+<text x="255.0" y="36" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="20" font-weight="700" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">mpsc channel</text>
+<text x="255.0" y="62" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">send = move ownership</text>
+<rect x="45" y="100" width="130" height="50" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="110.0" y="125.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">thread 0</text>
+<rect x="45" y="170" width="130" height="50" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="110.0" y="195.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">thread 1</text>
+<rect x="45" y="240" width="130" height="50" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="110.0" y="265.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">thread 2</text>
+<rect x="225" y="160" width="100" height="70" rx="6" fill="#3d2410" stroke="#f0883e" stroke-width="2"/>
+<text x="275.0" y="185.5" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">queue</text>
+<text x="275.0" y="204.5" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">📬</text>
+<rect x="360" y="165" width="110" height="60" rx="6" fill="#12321f" stroke="#3fb950" stroke-width="2"/>
+<text x="415.0" y="195.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">rx (main)</text>
+<path d="M 175,125 L 225,195" fill="none" stroke="#58a6ff" stroke-width="2" marker-end="url(#ah58a6ff)"/>
+<path d="M 175,195 L 225,195" fill="none" stroke="#58a6ff" stroke-width="2" marker-end="url(#ah58a6ff)"/>
+<path d="M 175,265 L 225,195" fill="none" stroke="#58a6ff" stroke-width="2" marker-end="url(#ah58a6ff)"/>
+<path d="M 325,195 L 360,195" fill="none" stroke="#3fb950" stroke-width="2" marker-end="url(#ah3fb950)"/>
+<text x="255" y="320" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">Vec moves into the channel:</text>
+<text x="255" y="344" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">sender can no longer touch it ✅</text>
+<rect x="510" y="10" width="470" height="380" rx="10" fill="#1c2330"/>
+<text x="745.0" y="36" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="20" font-weight="700" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">Arc&lt;Mutex&lt;T&gt;&gt;</text>
+<text x="745.0" y="62" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">shared state, compiler-checked</text>
+<rect x="535" y="100" width="130" height="50" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="600.0" y="116.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">thread A</text>
+<text x="600.0" y="134.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">Arc clone</text>
+<rect x="535" y="240" width="130" height="50" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="600.0" y="256.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">thread B</text>
+<text x="600.0" y="274.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">Arc clone</text>
+<rect x="745" y="140" width="210" height="110" rx="6" fill="#2a1f45" stroke="#bc8cff" stroke-width="2"/>
+<text x="850.0" y="176.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">heap: refcount = 3</text>
+<text x="850.0" y="195.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">Mutex 🔒</text>
+<text x="850.0" y="214.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">u64 counter</text>
+<path d="M 665,125 L 745,170" fill="none" stroke="#58a6ff" stroke-width="2" marker-end="url(#ah58a6ff)"/>
+<path d="M 665,265 L 745,220" fill="none" stroke="#58a6ff" stroke-width="2" marker-end="url(#ah58a6ff)"/>
+<text x="745" y="320" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">the data is *inside* the lock:</text>
+<text x="745" y="344" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">no lock() → no access, by type ✅</text>
+</svg>
