@@ -1,9 +1,0 @@
-# build products
-bin/
-*.o
-
-# logs of tests/check.sh
-tests/logs/
-
-# recordings
-*.rec
