@@ -3,7 +3,7 @@
 **BIL 322 System Programming**  
 **Due:** Thursday 10 December 2026  
 **Checkpoint:** Thursday 3 December — `tcp:` and `udp:` channels working  
-**Skeleton:** [`labs/swarm-phase2-3-skeleton/`](../labs/swarm-phase2-3-skeleton/)  
+**Skeleton:** [`projects/project3-phase2-3-skeleton/`](project3-phase2-3-skeleton/)  
 **Submission:** GitHub Classroom repository, Google Classroom link, and final demo  
 **Platform:** Linux, a Linux VM, or WSL2
 
@@ -25,7 +25,7 @@ Performers use TCP briefly to join or request rescue, then use UDP for movement.
 
 ## Reuse the Phase 2 Channel API
 
-Do **not** change [`include/chan.h`](../labs/swarm-phase2-3-skeleton/include/chan.h), and do not replace it with a new networking interface.
+Do **not** change [`include/chan.h`](project3-phase2-3-skeleton/include/chan.h), and do not replace it with a new networking interface.
 
 | Address | Mechanism | Typical use |
 |---|---|---|

@@ -64,7 +64,7 @@ TCP replaces FIFOs for programs on different machines. UDP is used for the perfo
 
 ## One Channel API for Phases 2 and 3
 
-The shared skeleton provides [`include/chan.h`](../labs/swarm-phase2-3-skeleton/include/chan.h). Its seven function declarations must not change:
+The shared skeleton provides [`include/chan.h`](project3-phase2-3-skeleton/include/chan.h). Its seven function declarations must not change:
 
 ```c
 chan_open       chan_listen       chan_accept       chan_send
@@ -78,7 +78,7 @@ The address selects the implementation:
 
 Keep transport-specific code inside `chan/`. Applications should use the channel functions for IPC. Moving a program from FIFO to TCP should change its address, not add socket calls to the application.
 
-The exact message formats and timing rules are in [`PROTOCOL.md`](../labs/swarm-phase2-3-skeleton/PROTOCOL.md).
+The exact message formats and timing rules are in [`PROTOCOL.md`](project3-phase2-3-skeleton/PROTOCOL.md).
 
 ## Real-Time Viewer
 
@@ -139,7 +139,7 @@ For Phases 2 and 3, submit a short `DESIGN.md` and `REPORT.md` with each phase. 
 ## Starting Points
 
 - Phase 1: [`labs/swarm-phase1-skeleton/`](../labs/swarm-phase1-skeleton/)
-- Phases 2 and 3: [`labs/swarm-phase2-3-skeleton/`](../labs/swarm-phase2-3-skeleton/)
-- Shared channel and application contract: [`PROTOCOL.md`](../labs/swarm-phase2-3-skeleton/PROTOCOL.md)
+- Phases 2 and 3: [`projects/project3-phase2-3-skeleton/`](project3-phase2-3-skeleton/)
+- Shared channel and application contract: [`PROTOCOL.md`](project3-phase2-3-skeleton/PROTOCOL.md)
 - Phase 2 handout: [`project3-phase2-pipes-shared-memory.md`](project3-phase2-pipes-shared-memory.md)
 - Phase 3 handout: [`project3-phase3-tcp-udp.md`](project3-phase3-tcp-udp.md)

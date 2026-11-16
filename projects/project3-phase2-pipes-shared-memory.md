@@ -2,7 +2,7 @@
 
 **BIL 322 System Programming**  
 **Due:** Thursday 26 November 2026  
-**Skeleton:** [`labs/swarm-phase2-3-skeleton/`](../labs/swarm-phase2-3-skeleton/)  
+**Skeleton:** [`projects/project3-phase2-3-skeleton/`](project3-phase2-3-skeleton/)  
 **Submission:** GitHub Classroom repository and Google Classroom link  
 **Platform:** Linux, a Linux VM, or WSL2
 
@@ -39,7 +39,7 @@ In this phase, drones live inside their captain. You may represent them with thr
 
 ## One Channel API
 
-All communication between programs must use the seven functions declared in [`include/chan.h`](../labs/swarm-phase2-3-skeleton/include/chan.h). Do not change this header.
+All communication between programs must use the seven functions declared in [`include/chan.h`](project3-phase2-3-skeleton/include/chan.h). Do not change this header.
 
 | Address | Mechanism | Use in this phase |
 |---|---|---|
@@ -62,7 +62,7 @@ The exact behavior is in `PROTOCOL.md` Section 1. In particular:
 
 ## Required Reading and Rules
 
-Read [`README.md`](../labs/swarm-phase2-3-skeleton/README.md) and [`PROTOCOL.md`](../labs/swarm-phase2-3-skeleton/PROTOCOL.md) before coding. `PROTOCOL.md` is the authoritative contract for FIFO setup, messages, timing, command-line arguments, frames, and output.
+Read [`README.md`](project3-phase2-3-skeleton/README.md) and [`PROTOCOL.md`](project3-phase2-3-skeleton/PROTOCOL.md) before coding. `PROTOCOL.md` is the authoritative contract for FIFO setup, messages, timing, command-line arguments, frames, and output.
 
 The following rules apply throughout the phase:
 
@@ -78,7 +78,7 @@ The following rules apply throughout the phase:
 ## Getting Started
 
 ```bash
-cd labs/swarm-phase2-3-skeleton
+cd projects/project3-phase2-3-skeleton
 make
 make test2
 ```
@@ -102,15 +102,12 @@ bin/center --listen fifo:/tmp/$USER.fifo --score data/scores/short.score \
 # Terminals 2 and 3
 bin/captain --center fifo:/tmp/$USER.fifo
 
-# Terminal 4
-bin/viewer --from shm:$USER-show --gui    # use --text for debugging
+# Terminal 4: start the real-time GUI viewer while the show is running
+bin/viewer --from shm:$USER-show --gui
 
 # Terminal 5, while the show is running
 bin/swarmctl --center fifo:/tmp/$USER.fifo pause
 bin/swarmctl --center fifo:/tmp/$USER.fifo resume
-
-# Optional, after the show
-bin/viewer --from file:/tmp/$USER.rec --text
 ```
 
 ## Tasks
