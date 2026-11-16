@@ -6,6 +6,7 @@
 [IPC with Shared Memory: mmap()](#ipc-with-mmap--shared-memory)
 [IPC with Pipes](#ipc-with-pipes)
 [IPC with POSIX Message Queues](#ipc-with-posix-message-queues)
+[IPC in Modern Languages: Rust & NumPy](#ipc-in-modern-languages-rust--numpy)
 *Edited based on last year lecture slides by using DeepSeek-R1*
 
 ---
@@ -561,6 +562,247 @@ sequenceDiagram
 Implement a **task scheduler** where multiple clients send tasks (with priorities) to a server via a message queue. The server executes tasks in priority order! 🚀  
 
 **Tip**: Use `mq_getattr` to monitor queue status and `fork()` for concurrent task processing.  
+
+---
+
+# IPC in Modern Languages: Rust & NumPy
+
+Same kernel objects (pipes, `mmap`, shared memory), friendlier and safer wrappers.
+- **Rust** 🦀: the *compiler* checks who owns a pipe end, a buffer, or a lock.
+- **Python + NumPy** 🐍: `mmap`/`shm_open` behind an `ndarray`, used for zero-copy data in ML/data pipelines.
+
+---
+
+## Rust: Pipes with `std::process::Command`
+
+![w:960](images/w9-rust-command-pipe.svg)
+
+---
+
+```rust
+use std::io::Read;
+use std::process::{Command, Stdio};
+
+fn main() -> std::io::Result<()> {
+    // 🔧 pipe() + fork() + dup2() + exec() — all in one builder
+    let ls = Command::new("ls")
+        .arg("-1")
+        .stdout(Stdio::piped())          // 🚰 stdout -> write end of a pipe
+        .spawn()?;                       // 🐣 fork + exec
+
+    let mut wc = Command::new("wc")
+        .arg("-l")
+        .stdin(ls.stdout.unwrap())       // 🔗 read end becomes wc's stdin (ownership moves!)
+        .stdout(Stdio::piped())
+        .spawn()?;
+
+    let mut out = String::new();
+    wc.stdout.take().unwrap().read_to_string(&mut out)?; // 📥 read until EOF
+    wc.wait()?;                          // 🧹 reap the child (no zombies)
+    println!("entries: {}", out.trim());
+    Ok(())                               // ✅ every fd is closed by Drop
+}
+```
+- Compare with the C `ls | cut` example: no forgotten `close()`, so no "reader never sees EOF" hang. 🎯
+
+---
+
+## Rust: Channels (`mpsc`) — Message Passing Between Threads
+
+![w:960](images/w9-rust-ownership.svg)
+
+---
+
+```rust
+use std::sync::mpsc;
+use std::thread;
+
+fn main() {
+    let (tx, rx) = mpsc::channel::<Vec<u32>>();   // 📬 sender / receiver pair
+
+    for id in 0..3 {
+        let tx = tx.clone();                       // 📮 each producer gets its own Sender
+        thread::spawn(move || {                    // 🚚 `move`: thread owns tx
+            let batch = vec![id; 4];
+            tx.send(batch).unwrap();               // 📦 ownership of the Vec moves into the channel
+            // println!("{:?}", batch);            // ❌ compile error: value moved
+        });
+    }
+    drop(tx);                                      // 🔚 drop the original so rx sees "closed"
+
+    for batch in rx {                              // 📥 blocks like read(); ends when all senders dropped
+        println!("got {:?}", batch);
+    }
+}
+```
+- Like a **message queue** (boundaries kept, blocking receive), but inside one process.
+- Closing works like a pipe: all `Sender`s dropped → receiver gets end-of-stream.
+
+---
+
+## Rust: `Arc<Mutex<T>>` — Shared State Without Data Races
+
+```rust
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+fn main() {
+    let counter = Arc::new(Mutex::new(0u64));      // 🔒 data lives *inside* the lock
+    let mut handles = Vec::new();
+
+    for _ in 0..4 {
+        let c = Arc::clone(&counter);              // 🔢 ref-count++, same heap object
+        handles.push(thread::spawn(move || {
+            for _ in 0..100_000 {
+                *c.lock().unwrap() += 1;           // 🔑 lock() -> guard; unlocks at end of statement
+            }
+        }));
+    }
+    for h in handles { h.join().unwrap(); }        // 🤝 like pthread_join
+    println!("total = {}", *counter.lock().unwrap()); // ✅ always 400000
+}
+```
+- In C, `pthread_mutex_t` and the counter are separate: nothing stops you from forgetting the lock.
+- In Rust, the only way to reach the `u64` is through `lock()`. 🛡️
+
+---
+
+## `Send` & `Sync`: Races Become Compile Errors
+
+| Trait | Meaning | Example ✅ | Example ❌ |
+|-------|---------|-----------|-----------|
+| `Send` | value may **move** to another thread | `Vec<T>`, `Arc<T>`, `Sender<T>` | `Rc<T>` (non-atomic refcount) |
+| `Sync` | `&T` may be **shared** between threads | `Mutex<T>`, `AtomicU64` | `Cell<T>`, `RefCell<T>` |
+
+```rust
+let mut counter = 0;
+thread::spawn(|| counter += 1);      // ❌ E0373: closure may outlive the current
+                                     //    function, but it borrows `counter`
+let shared = Rc::new(vec![1, 2, 3]);
+thread::spawn(move || println!("{:?}", shared));
+                                     // ❌ E0277: `Rc<Vec<i32>>` cannot be sent
+                                     //    between threads safely
+```
+- ⚠️ Rust prevents **data races**, not every race: deadlocks and wrong lock order are still possible (Lecture 8).
+
+---
+
+## Rust: `mmap` with the `memmap2` crate
+
+```rust
+// Cargo.toml: memmap2 = "0.9"
+use memmap2::MmapMut;
+use std::fs::OpenOptions;
+
+fn main() -> std::io::Result<()> {
+    let file = OpenOptions::new()
+        .read(true).write(true).create(true).truncate(false)
+        .open("shared.bin")?;
+    file.set_len(4096)?;                           // 📏 like ftruncate(fd, 4096)
+
+    // ⚠️ unsafe: another process may change the file under us
+    let mut map = unsafe { MmapMut::map_mut(&file)? }; // 🗺️ mmap(PROT_READ|PROT_WRITE, MAP_SHARED)
+
+    map[0] += 1;                                   // ✍️ plain slice write -> page cache -> file
+    map.flush()?;                                  // 💾 msync()
+    println!("run #{}", map[0]);                   // 🔁 run it twice: the value survives
+    Ok(())                                         // 🧹 munmap + close via Drop
+}
+```
+- Why `unsafe`? The borrow checker sees **one process**. Another process writing the same pages is outside its view, so *you* must synchronize (as in C). 🤔
+
+---
+
+## Python NumPy: `np.memmap` — a File as an Array
+
+```python
+import numpy as np
+
+# 🗺️ mmap() a 1M-float file as an ndarray (mode "w+" = create, read/write)
+a = np.memmap("data.f32", dtype=np.float32, mode="w+", shape=(1_000_000,))
+a[:] = np.arange(a.size)          # ✍️ writes go to the page cache, not a Python copy
+a.flush()                          # 💾 msync()
+del a                              # 🧹 munmap()
+
+# 📖 later / another process: map read-only, nothing is read yet (lazy!)
+b = np.memmap("data.f32", dtype=np.float32, mode="r", shape=(1_000_000,))
+print(b[999_999])                  # 📄 page fault loads only that one page
+print(b[::100_000].sum())          # 🔍 touches ~10 pages, not the whole 4 MB
+```
+- Modes: `"r"` → `PROT_READ`, `"r+"`/`"w+"` → `MAP_SHARED`, `"c"` → `MAP_PRIVATE` (copy-on-write).
+- Used for datasets bigger than RAM: the OS pages data in and out for you (demand paging). 💡
+
+---
+
+## NumPy + `multiprocessing.shared_memory`
+
+![w:960](images/w9-numpy-shm.svg)
+
+---
+
+```python
+import numpy as np
+from multiprocessing import Process, shared_memory
+
+N, WORKERS = 8_000_000, 4
+
+def work(name, lo, hi):
+    shm = shared_memory.SharedMemory(name=name)      # 🔗 attach: shm_open + mmap
+    a = np.ndarray((N,), dtype=np.float64, buffer=shm.buf)  # 👀 a *view*, zero-copy
+    a[lo:hi] = np.sqrt(np.arange(lo, hi))            # ✍️ each worker owns its slice -> no race
+    del a                                            # 🧹 drop the view before close()
+    shm.close()                                      # 🚪 munmap (segment still exists)
+
+if __name__ == "__main__":
+    shm = shared_memory.SharedMemory(create=True, size=N * 8)  # 🏗️ /dev/shm/psm_xxxx
+    a = np.ndarray((N,), dtype=np.float64, buffer=shm.buf)
+    step = N // WORKERS
+    ps = [Process(target=work, args=(shm.name, i * step, (i + 1) * step))
+          for i in range(WORKERS)]                   # 📛 only the *name* is sent, not 64 MB
+    for p in ps: p.start()
+    for p in ps: p.join()
+    print(a[[0, 1, 4, N - 1]])                       # ✅ parent sees the workers' writes
+    del a
+    shm.close()
+    shm.unlink()                                     # 🗑️ shm_unlink(): free the segment
+```
+
+---
+
+## NumPy Shared Memory: Pitfalls
+
+```python
+view = np.frombuffer(shm.buf, dtype=np.float64)   # 👀 view: shares the frames
+copy = np.array(shm.buf).view(np.float64)         # 📋 copy: private, changes not shared
+view[0] = 42
+print(view[0], copy[0], np.shares_memory(view, copy))   # 42.0 0.0 False
+```
+| Pitfall | What happens | Fix |
+|---------|--------------|-----|
+| `Queue.put(big_array)` | array is **pickled** and copied through a pipe 🐢 | send `shm.name`, attach a view |
+| `a[i] += 1` from many processes | read-modify-write **race** (no GIL across processes) | disjoint slices, or `multiprocessing.Lock` |
+| forgot `unlink()` | `/dev/shm` segment leaks until reboot 🗑️ | owner calls `unlink()` once |
+| `close()` while a view is alive | page is unmapped; next `a[0] = 1` → **SIGSEGV** 💥 (Python 3.13) | `del` the ndarray first |
+
+---
+
+## Same Idea, Three Languages
+
+| Concept | C (POSIX) | Rust 🦀 | Python / NumPy 🐍 |
+|---------|-----------|---------|-------------------|
+| Pipe to a child | `pipe` + `fork` + `dup2` + `exec` | `Command` + `Stdio::piped()` | `subprocess.Popen(stdout=PIPE)` |
+| Message passing | `mq_send` / `mq_receive` | `mpsc::channel` (threads) | `multiprocessing.Queue` |
+| File mapping | `mmap(fd, MAP_SHARED)` | `memmap2::MmapMut` | `np.memmap` |
+| Named shared memory | `shm_open` + `mmap` | `shared_memory` / `memmap2` crates | `shared_memory.SharedMemory` |
+| Who prevents data races? | you 😬 | the compiler (`Send`/`Sync`) | you (locks, disjoint slices) |
+
+**Modern domains** 🤖: PyTorch `DataLoader` workers, Ray's object store and model servers all pass tensors through shared memory exactly like this: send a *name*, map a *view*.
+
+---
+
+## Lab Challenge (Modern IPC)
+1. 🦀 Rewrite the `ls → grep → wc` pipeline with `std::process::Command`. Count the `close()` calls you no longer need.
+2. 🐍 Fill a 100M-element array with 4 processes via `shared_memory`, then repeat with `Queue.put(array)`. Time both and explain the difference.
 
 ---
 
