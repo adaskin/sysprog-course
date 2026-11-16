@@ -72,8 +72,9 @@ center (parent process)
               └─ follower threads F0..Fk, a barrier per beat
 ```
 
-The messages are the ones in the project spec (Section 3). It is a **fixed contract**: you
-can test a leader by typing these lines into its stdin by hand. The given `line_io.c` sends and
+The messages are defined in `swarm-phase1-skeleton/include/protocol.h` and implemented in
+`src/protocol.c`. They form a **fixed contract**: you can test a leader by typing these lines into
+its stdin by hand. The given `line_io.c` sends and
 receives lines on **file descriptors**, so in Phase 3 pipes can become sockets.
 
 **One beat, step by step** (this is what you build in Tasks 3 and 5):
@@ -375,6 +376,6 @@ zombie processes after a captain dies, a hang on shutdown, a missing report.
 
 Phases 2 and 3 are a design of your own, from a contract: the center, the captains, every drone
 and the viewers become separate programs that nobody starts for anybody, and they meet by address
-through one channel API: Unix-domain sockets, shared memory and a file in Phase 2, TCP and UDP in
+through one channel API: named pipes (FIFOs), shared memory and a file in Phase 2, TCP and UDP in
 Phase 3. They do not need this code, but your queue, your grid and your performers are a good start:
 keep them clean.
