@@ -373,6 +373,8 @@ zombie processes after a captain dies, a hang on shutdown, a missing report.
 
 ## 🔭 Where This Goes Next
 
-Phase 2 moves the stage state into shared memory and the viewer into its own process;
-Phase 3 replaces the pipes with sockets. Keep `queue.c`, the protocol code (`line_io.c` is already
-written against file descriptors), and the tests clean.
+Phases 2 and 3 are a design of your own, from a contract: the center, the captains, every drone
+and the viewers become separate programs that nobody starts for anybody, and they meet by address
+through one channel API: Unix-domain sockets, shared memory and a file in Phase 2, TCP and UDP in
+Phase 3. They do not need this code, but your queue, your grid and your performers are a good start:
+keep them clean.

@@ -1,4 +1,4 @@
-# short.score — 56 beats; used by `make test`.
+# short.score — 56 beats; used by tests/check.sh.
 # stage W H | tempo BPM | image PATH | section NAME START END THEME MOOD (inclusive, contiguous)
 stage 64 36
 tempo 120

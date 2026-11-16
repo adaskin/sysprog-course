@@ -1,4 +1,4 @@
-# long.score — 144 beats; used by `make bench`.
+# long.score — 144 beats; for load measurements (Phase 3, Task 5).
 stage 64 36
 tempo 120
 image data/images/wave64x36.pgm
