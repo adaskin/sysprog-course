@@ -48,7 +48,10 @@ Only the three queue files and `pool.c` should need modification.
   Set `value`, then `agent`, then `done = 1` last.
 - **Lock held while running a task?** The spec forbids it; `run_task()` must run
   after you unlock / post.
-
+- If the mq backend fails with EINVAL, your kernel's `fs.mqueue.msg_max` is below `32`. 
+  - Raise it: `sudo sysctl -w fs.mqueue.msg_max=32` 
+  - If you cannot raise it, note that reducing `QUEUE_CAPACITY` is not enough on its own, because main.c's priority precheck submits a hardcoded batch of `12` tasks. The precheck will block at startup unless capacity ≥ 12 and msg_max ≥ capacity. The correct fix is to raise msg_max, not to shrink the queue.
+  
 ## Hint for TODO 4 / TODO 8
 
 After `best_task_index`, copy `tasks[best]` to `*task`, then move the last
