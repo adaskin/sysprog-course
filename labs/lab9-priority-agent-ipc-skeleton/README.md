@@ -26,3 +26,31 @@ The skeleton compiles as provided, but runs fail until the `TODO`s are completed
 - `compare.sh`: supplied comparison runs (given).
 
 Only the three queue files and `pool.c` should need modification.
+
+## How the run is tested (read this first)
+
+1. `main.c` runs a **fast precheck** (`priority_order_ok`): submits 12 tasks
+   and receives them, verifying priority (high first) and sequence (small first)
+   tie-break. If this fails, the backend is broken — the pool is not involved yet.
+2. `run_pool()` starts 1 submitter thread + N agents (threads for `mutex`,
+   forked processes for `mq` and `shm`).
+3. After the submitter finishes, the runner sends one priority-0 stop task per
+   agent. Priority 0 is lowest, so every normal task drains first.
+4. `main.c` then checks `results[i].done == 1` for all i and prints one CSV line.
+
+## Debugging checklist
+
+- **Program hangs?** Use `timeout 5 ./agentlab mutex 1 8`. A hang is almost
+  always a missing `pthread_cond_signal`/`sem_post`, or a `while` replaced by `if`.
+- **Wrong order?** `make check` fails loudly. Verify you use `best_task_index`
+  in the array backends and that you do **not** use it for `mq`.
+- **Garbage results?** The `results` array is `MAP_SHARED`, so children can write.
+  Set `value`, then `agent`, then `done = 1` last.
+- **Lock held while running a task?** The spec forbids it; `run_task()` must run
+  after you unlock / post.
+
+## Hint for TODO 4 / TODO 8
+
+After `best_task_index`, copy `tasks[best]` to `*task`, then move the last
+element into the slot `best`, then decrement `count`. This preserves O(1)
+removal and keeps the array compact.

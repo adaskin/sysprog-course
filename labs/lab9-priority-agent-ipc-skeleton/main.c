@@ -1,27 +1,27 @@
-#include "agentlab.h"
-
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 
-/* Given: command-line handling, timing, cleanup, and correctness checks. */
+#include "agentlab.h"
 
-static int positive_number(const char *text, const char *name)
-{
-    char *end;
+/* Given: command-line handling, timing, cleanup, and correctness
+ * checks. */
+
+static int positive_number(const char* text, const char* name) {
+    char* end;
     long value = strtol(text, &end, 10);
 
-    if (*text == '\0' || *end != '\0' || value <= 0 || value > 1000000) {
+    if (*text == '\0' || *end != '\0' || value <= 0 ||
+        value > 1000000) {
         fprintf(stderr, "invalid %s: %s\n", name, text);
         exit(EXIT_FAILURE);
     }
     return (int)value;
 }
 
-static backend_t open_backend(const char *name)
-{
+static backend_t open_backend(const char* name) {
     if (strcmp(name, "mutex") == 0) {
         return mutex_backend(QUEUE_CAPACITY);
     }
@@ -34,9 +34,9 @@ static backend_t open_backend(const char *name)
     return (backend_t){0};
 }
 
-/* Submit a batch before receiving it: the queued order must follow the rules. */
-static int priority_order_ok(const char *name)
-{
+/* Submit a batch before receiving it: the queued order must follow
+ * the rules. */
+static int priority_order_ok(const char* name) {
     backend_t backend = open_backend(name);
     int ok = 1;
 
@@ -64,7 +64,8 @@ static int priority_order_ok(const char *name)
         if (task.priority > previous_priority ||
             (task.priority == previous_priority &&
              task.sequence <= previous_sequence)) {
-            fprintf(stderr, "%s: priority or tie order is incorrect\n", name);
+            fprintf(stderr,
+                    "%s: priority or tie order is incorrect\n", name);
             ok = 0;
             break;
         }
@@ -76,19 +77,22 @@ static int priority_order_ok(const char *name)
     return ok;
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char** argv) {
     if (argc < 2 || argc > 4) {
-        fprintf(stderr, "usage: %s mutex|mq|shm [agents [tasks]]\n", argv[0]);
+        fprintf(stderr, "usage: %s mutex|mq|shm [agents [tasks]]\n",
+                argv[0]);
         return EXIT_FAILURE;
     }
 
-    int agent_count = argc >= 3 ? positive_number(argv[2], "agent count") : 4;
-    int task_count = argc >= 4 ? positive_number(argv[3], "task count") : 20000;
+    int agent_count =
+        argc >= 3 ? positive_number(argv[2], "agent count") : 4;
+    int task_count =
+        argc >= 4 ? positive_number(argv[3], "task count") : 20000;
     backend_t backend;
 
     if (agent_count > QUEUE_CAPACITY) {
-        fprintf(stderr, "agent count must be at most %d\n", QUEUE_CAPACITY);
+        fprintf(stderr, "agent count must be at most %d\n",
+                QUEUE_CAPACITY);
         return EXIT_FAILURE;
     }
     if (strcmp(argv[1], "mutex") != 0 && strcmp(argv[1], "mq") != 0 &&
@@ -107,8 +111,9 @@ int main(int argc, char **argv)
     }
 
     size_t results_size = (size_t)task_count * sizeof(result_t);
-    result_t *results = mmap(NULL, results_size, PROT_READ | PROT_WRITE,
-                             MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    result_t* results =
+        mmap(NULL, results_size, PROT_READ | PROT_WRITE,
+             MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     if (results == MAP_FAILED) {
         perror("mmap results");
         backend.destroy(backend.state);
