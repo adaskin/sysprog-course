@@ -379,6 +379,22 @@ O(n) scan, O(1) swap.
 
 ---
 
+### Note that Linux mqueue is implemented by rb-trees
+```
+   msg_tree (rb-tree keyed by priority)          rightmost cached
+              │                                       │
+              ▼                                       ▼
+        ┌──────────┐       ┌──────────┐       ┌──────────┐
+        │ p=1 node │       │ p=2 node │       │ p=3 node │  ← msg_tree_rightmost
+        │ msg_list │       │ msg_list │       │ msg_list │
+        └────┬─────┘       └────┬─────┘       └────┬─────┘
+             │                  │                  │
+          msg A              msg B              msg E   ← head (oldest, served next)
+          msg C              msg D              msg F
+                                                msg G   ← tail (newest)
+```
+---
+
 ## 5. When does `submit` / `receive` block?
 
 ```
