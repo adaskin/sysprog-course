@@ -21,7 +21,7 @@ The agents represent workers in a small AI-agent orchestrator. Each task has a p
 By the end of the lab, you should be able to:
 
 1. Implement a blocking, thread-safe priority queue 
-   1. Note yuo will not implement this through min-heap; you will uses a standard array: enqueue is O(1), dequeue is O(n)(best swapped with the last).
+   1. Note you will not implement this through min-heap; you will uses a standard array: enqueue is O(1), dequeue is O(n)(best swapped with the last).
    2. Linux kernel implements this in ipc/mqueue.c through red-black trees: O(logn)
 2. Use a submitter thread and a fixed pool of worker agents.
 3. Replace a user-space queue with a Linux POSIX message queue.
