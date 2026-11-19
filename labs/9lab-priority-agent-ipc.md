@@ -20,7 +20,9 @@ The agents represent workers in a small AI-agent orchestrator. Each task has a p
 
 By the end of the lab, you should be able to:
 
-1. Implement a blocking, thread-safe priority queue.
+1. Implement a blocking, thread-safe priority queue 
+   1. Note yuo will not implement this through min-heap; you will uses a standard array: enqueue is O(1), dequeue is O(n)(best swapped with the last).
+   2. Linux kernel implements this in ipc/mqueue.c through red-black trees: O(logn)
 2. Use a submitter thread and a fixed pool of worker agents.
 3. Replace a user-space queue with a Linux POSIX message queue.
 4. Implement a process-shared queue in shared memory using semaphores.
@@ -189,3 +191,438 @@ Correct, clean execution matters more than a large test suite. A faster backend 
 - Holding any queue lock while calling `run_task()`.
 
 You may use AI tools for explanation and debugging under the course policy. You must be able to explain every line you submit, especially each wait, lock, unlock, signal, and post.
+# Lab 9 — Visual Guide
+
+## 0. What is a "backend"? 
+```
+          agent_loop()  /  submitter_loop()      ← student code
+          ──────────────────────────────────
+                 │  only these three calls
+                 ▼
+   ┌─────────────────────────────────────────────┐
+   │   backend->submit (state, &task)  → 0 or -1 │
+   │   backend->receive(state, &task)  → 0 or -1 │
+   │   backend->destroy(state)                   │
+   └────────────────────┬────────────────────────┘
+                        │  one function pointer
+                        ▼
+    ┌──────────────┬──────────────┬──────────────┐
+    │   mutex      │     mq       │     shm      │
+    │ heap+condvar │   kernel     │ shm + sems   │
+    └──────────────┴──────────────┴──────────────┘
+```
+
+---
+
+## 1. The big picture
+
+```
+                ┌──────────────────┐
+                │   submitter      │   1 thread
+                │   submitter_loop │   make_task(0..N-1)
+                └────────┬─────────┘
+                         │ submit(&task)
+                         ▼
+        ╔══════════════════════════════════════════╗
+        ║      PRIORITY QUEUE  (capacity = 32)     ║
+        ║   highest priority first                 ║
+        ║   smaller sequence breaks ties           ║
+        ╚══════════════════════════════════════════╝
+            │       │       │       │
+            │ receive(&task) — blocks until a task exists
+            ▼       ▼       ▼       ▼
+    ┌────────┐┌────────┐┌────────┐┌────────┐
+    │ agent0 ││ agent1 ││ agent2 ││ agent3 │  N fixed
+    └───┬────┘└───┬────┘└───┬────┘└───┬────┘
+        │         │         │         │
+        ▼         ▼         ▼         ▼
+    ┌───────────────────────────────────────────────┐
+    │   results[task.id] = { value, agent, done=1 } │
+    │   one slot per task ID → no lock needed       │
+    └───────────────────────────────────────────────┘
+
+   After submitter finishes, runner sends one priority-0 stop
+   task per agent → agents exit → clean shutdown.
+```
+
+---
+
+## 2. Three backends, three memory layouts
+
+```
+════════ MUTEX backend — one process, N threads ════════
+
+   ┌─────────────────────────────────────────────────┐
+   │                ONE PROCESS                      │
+   │                                                 │
+   │   [submitter]──┐                                │
+   │                ▼                                │
+   │       ┌────────────────────────────┐            │
+   │       │ tasks[32]   count          │            │
+   │       │ + mutex + 2 condition vars │  ← heap    │
+   │       └───┬─────┬─────┬─────┬──────┘            │
+   │           │     │     │     │                   │
+   │        [a0]   [a1]   [a2]   [a3]  ← threads     │
+   │           └──┬──┴──┬──┴──┬──┘                   │
+   │              ▼     ▼     ▼                      │
+   │       results[N]  (same heap — threads share it)│
+   └─────────────────────────────────────────────────┘
+
+
+════════ MQ backend — parent + N forked children ═══════
+
+   ┌─── PARENT ───┐    ┌─── KERNEL ─────┐    ┌─ CHILDREN ─┐
+   │  submitter   │    │   POSIX mq     │    │  agent 0   │
+   │  thread ─────┼───▶│   capacity 32  │───▶│  agent 1   │
+   │              │    │  priority in   │    │  agent 2   │
+   │              │    │  the kernel    │    │  agent 3   │
+   │  results ────┼────┼────────────────┼───▶│  writes    │
+   │  (MAP_SHARED)│    │                │    │  results   │
+   └──────────────┘    └────────────────┘    └────────────┘
+
+   Name: /bil322_agents_<uid>_<pid>  (unique per process)
+
+
+════════ SHM backend — parent + N forked children ══════
+
+   ┌─── PARENT ───┐  ┌────── SHARED MAPPING ────────┐  ┌─ CHILDREN ─┐
+   │  submitter   │  │  tasks[32]  count            │  │  agent 0   │
+   │  thread ─────┼─▶│  sem lock    (binary, =1)    │─▶│  agent 1   │
+   │              │  │  sem empty_slots (count,=32) │  │  agent 2   │
+   │              │  │  sem items       (count,=0)  │  │  agent 3   │
+   │  results ────┼──┼──(another MAP_SHARED)────────┼─▶│  writes    │
+   │  (MAP_SHARED)│  └──────────────────────────────┘  │  results   │
+   └──────────────┘                                    └────────────┘
+
+   ⚠ sem_init(&s, 1, ...) — pshared MUST be 1 for this to work.
+```
+
+---
+
+## 3. A task's life cycle (one trip through the pool)
+
+```
+submitter                      queue                agent
+──────────                     ─────                ─────
+  make_task(i)                                            
+    │                                                     
+    │  submit(&task)                                       
+    ▼                                                     
+  ┌──────────────────────┐                                
+  │ if FULL: BLOCK       │  signal / post / mq wake  
+  │ place into the queue │ ────────────────────────▶ 
+  └──────────────────────┘                                 
+                            receive(&task) ────▶┌────────────┐
+                                if EMPTY: BLOCK │ find best  │
+                                                │ swap-last  │
+                                                └─────┬──────┘
+                                                      ▼
+                                                run_task(task)
+                                                      ▼
+                                    results[id].value = v
+                                    results[id].agent = a
+                                    results[id].done  = 1  ← last
+```
+
+---
+
+## 4. Priority — what "highest priority first" actually means
+
+`make_task(id)` sets `priority = ((id*13) % 3) + 1`. So priorities cycle `1, 2, 3, 1, 2, 3, ...`.
+
+```
+   id:     0    1    2    3    4    5    6    7
+   prio:   1    2    3    1    2    3    1    2
+   seq:    0    1    2    3    4    5    6    7
+
+   QUEUE CONTENT after all 8 submitted (array order):
+
+   ┌────┬────┬────┬────┬────┬────┬────┬────┐
+   │p1s0│p2s1│p3s2│p1s3│p2s4│p3s5│p1s6│p2s7│
+   └────┴────┴────┴────┴────┴────┴────┴────┘
+
+   best_task_index() scans:  highest prio, then lowest seq
+   ORDER DELIVERED:
+      2, 5,       ← all p=3, sequence ascending
+      1, 4, 7,    ← all p=2, sequence ascending
+      0, 3, 6     ← all p=1, sequence ascending
+```
+
+### How removal works — swap-with-last
+
+```
+   BEFORE remove (pick idx 2):
+
+   ┌────┬────┬────┬────┬────┬────┬────┬────┐
+   │p1s0│p2s1│p3s2│p1s3│p2s4│p3s5│p1s6│p2s7│  count=8
+   └────┴────┴────┴────┴────┴────┴────┴────┘
+              ▲
+              best=2
+
+   Step 1: *task       = tasks[2]            (copy out)
+   Step 2: tasks[2]    = tasks[--count]      (last → hole)
+   Step 3: --count done in step 2
+
+   AFTER remove (count=7):
+
+   ┌────┬────┬────┬────┬────┬────┬────┐
+   │p1s0│p2s1│p2s7│p1s3│p2s4│p3s5│p1s6│
+   └────┴────┴────┴────┴────┴────┴────┘
+              ▲
+              p2s7 moved here from end
+
+Note: The lab does not use a heap. 
+It uses a fixed-size array with a linear scan to find the best task
+O(n) scan, O(1) swap.
+- you can implement min-heap if you want, that would make O(logn).
+```
+
+---
+
+## 5. When does `submit` / `receive` block?
+
+```
+════════════════════════ submit() blocks WHEN... ═════════════════════
+
+   mutex        while (count == capacity)
+                    pthread_cond_wait(&not_full, &lock);     ← HERE
+                ...store...
+                pthread_cond_signal(&not_empty);
+
+   mq           mq_send(desc, &task, sizeof, prio)           ← HERE
+                (returns EAGAIN unless O_BLOCK; blocks by default)
+
+   shm          sem_wait(&empty_slots)                       ← HERE
+                sem_wait(&lock)
+                ...store...
+                sem_post(&lock)
+                sem_post(&items)
+
+
+════════════════════════ receive() blocks WHEN... ════════════════════
+
+   mutex        while (count == 0)
+                    pthread_cond_wait(&not_empty, &lock);    ← HERE
+                ...pick best, swap-last, count--...
+                pthread_cond_signal(&not_full);
+
+   mq           mq_receive(desc, &task, sizeof, NULL)        ← HERE
+
+   shm          sem_wait(&items)                             ← HERE
+                sem_wait(&lock)
+                ...pick best, swap-last, count--...
+                sem_post(&lock)
+                sem_post(&empty_slots)
+```
+
+---
+
+## 6. Stop task / shutdown
+
+```
+  After submitter finishes:
+
+       runner.c sends ONE stop task per agent
+       ┌──────────┐  submit   ┌──────────────┐  receive   ┌──────────┐
+       │  runner  │──────────▶│    QUEUE     │───────────▶│ agent i  │
+       │ (parent) │ id=-1,p=0 │  (sinks to   │   p = 0    │  sees    │
+       └──────────┘ per agent │   bottom)    │  (lowest)  │  id==-1  │
+                              └──────────────┘            │ → exits  │
+                                                          └──────────┘
+
+  KEY: priority 0 is LOWER than every normal task (1,2,3),
+       so stops are only dequeued AFTER all real work has drained.
+
+  Queue just before stops:   [p3 p3 p2 p1 p1 ... ]
+  Queue after M stops added: [p1 p1 p0 p0 p0 ... p0]
+                                   ▲  ▲
+                             normal  M stop tasks
+```
+
+---
+
+## 7. The precheck — why capacity 10 hung
+
+```
+════════════ priority_order_ok()  (runs BEFORE any agent starts) ════════════
+
+  for i = 0..11:   submit(make_task(i))      ← 12 submits first
+  for i = 0..11:   receive(&task); check     ← 12 receives come AFTER
+
+  With capacity = 10:
+
+      submit#0 .. submit#9  ──▶ fills all 10 slots  ✓
+      submit#10             ──▶ BLOCKS forever
+                                   (nobody is receiving yet)
+
+  ⚠ capacity must be ≥ 12 for this precheck to pass.
+
+  With capacity = 32  →  ✓ (but the kernel default msg_max = 10 blocks
+                             mq_open with EINVAL unless raised)
+```
+```bash
+cat /proc/sys/fs/mqueue/msg_max
+cat /proc/sys/fs/mqueue/msgsize_max
+sudo sysctl -w fs.mqueue.msg_max=32
+```
+---
+
+## 8. Top 3 bugs — visually
+
+```
+════ BUG A: if() instead of while() on cond_wait ════
+
+   ✗  if (count == capacity)
+          pthread_cond_wait(&not_full, &lock);   ← check ONCE
+
+   ┌─────────────────────────────────────────────────┐
+   │ spurious wake, or another producer grabs the    │
+   │ slot before this thread reacquires the lock →   │
+   │ proceeds anyway → count = capacity+1 → overflow │
+   └─────────────────────────────────────────────────┘
+
+   ✓  while (count == capacity)
+          pthread_cond_wait(&not_full, &lock);   ← always re-check
+```
+
+```
+════ BUG B: missing wake-up ════
+
+   submit():  lock, count++, unlock         ─── no signal(&not_empty)
+
+   consumer:  lock, while(count==0) cond_wait    ─── sleeps forever
+              ─────────────────────
+              queue HAS items, nobody told the consumer
+              → timeout 5 ./agentlab ... is your friend
+```
+
+```
+════ BUG C: wrong semaphore wait order (shm, TODO 7) ════
+
+   ✗ lock first, then empty_slots
+
+     producer A:  sem_wait(&lock)         ✓ got it
+                  sem_wait(&empty_slots)  ✗ blocked — queue full
+     consumer B:  sem_wait(&lock)         ✗ blocked — needs the lock
+                                                to free a slot
+     ┌────────────────────────────────────────────────────┐
+     │ A holds lock, waits for a slot                     │
+     │ B needs lock to free a slot                        │
+     │ → DEADLOCK                                          │
+     └────────────────────────────────────────────────────┘
+
+   ✓ empty_slots first, then lock
+
+     producer A:  sem_wait(&empty_slots)  ✗ blocked
+     consumer B:  sem_wait(&items)        ✓
+                  sem_wait(&lock)         ✓
+                  remove, sem_post(&lock)
+                  sem_post(&empty_slots) ──▶ A wakes
+     ┌────────────────────────────────────────────────────┐
+     │ A never held the lock while blocking → no deadlock │
+     └────────────────────────────────────────────────────┘
+```
+
+---
+
+## 9. What the lock protects — and what it must not
+
+```
+═══════════════════════ LOCK SCOPE ═══════════════════════
+
+  INSIDE the lock                   OUTSIDE the lock
+  ────────────────                  ────────────────
+  • count                           • run_task(&task)    ← slow work
+  • tasks[] array reads & writes    • results[id] = ...
+  • best_task_index()               • make_task(i)
+                                    • printf / perror
+                                    • munmap, mq_close, exit
+
+  Why? Holding the lock around run_task() serialises all agents
+  and turns the pool into a single worker. Parallelism comes from
+  many agents running tasks simultaneously — that only works if
+  the lock is released before running.
+
+  results[id]: each task owns exactly one slot. Two agents never
+  touch the same slot → no lock needed. MAP_SHARED is what makes
+  the writes visible from child processes (mq, shm backends).
+```
+
+---
+
+## 10. Threads vs processes — memory view
+
+```
+═════════════════════════════════════════════════════════════════════
+  THREADS (mutex)                     PROCESSES (mq, shm)
+═════════════════════════════════════════════════════════════════════
+
+  Same address space:                 Separate address spaces:
+
+   ┌──────────────────────┐            ┌────────────┐   ┌────────────┐
+   │  submitter thread    │            │   parent   │   │  child 0   │
+   │  agent0 thread       │            │  submitter │   │  agent 0   │
+   │  agent1 thread       │            │  + results │   │            │
+   │  agent2 thread       │            │  mapping   │   │            │
+   │  agent3 thread       │            └─────┬──────┘   └─────┬──────┘
+   │                      │                  │                │
+   │  ── ALL SHARE ──     │                  │  fork() inherits
+   │     the queue        │                  │  MAP_SHARED mappings
+   │     the results      │                  ▼                ▼
+   └──────────────────────┘            ┌───────────────────────────┐
+                                       │     shared physical       │
+   pthread_mutex works                 │     pages (results, shm    │
+   (all in one pid)                    │     queue, semaphores)    │
+                                       └───────────────────────────┘
+
+                                       comms across processes:
+                                         mq:  via kernel
+                                         shm: via shared pages +
+                                              process-shared sems
+```
+
+---
+
+## 11. Full run timeline
+
+```
+  main
+   │
+   ├─ 1. priority_order_ok(name)            ← 12-submit precheck
+   │        backend opened, checked, destroyed
+   │
+   ├─ 2. open_backend(name)                 ← fresh queue created
+   │
+   ├─ 3. mmap results[N]   (MAP_SHARED|ANON) ← visible to future children
+   │
+   ├─ 4. run_pool(backend, agents, N)
+   │      │
+   │      ├─ spawn N agents          ─┐
+   │      ├─ spawn submitter thread    │  all concurrent
+   │      │   (submits 0..N-1)         │
+   │      ├─ join submitter            │
+   │      ├─ submit N stop tasks       │
+   │      ├─ join / waitpid N agents  ─┘
+   │      └─ return 0
+   │
+   ├─ 5. scan results[N]: count done==1, XOR checksum
+   │
+   ├─ 6. print one CSV row: backend,agents,N,ms,tasks/sec,checksum
+   │
+   └─ 7. destroy backend, munmap results, exit
+```
+
+---
+
+## Quick-fire recap (end-of-class summary on the board)
+
+| Question   | mutex | mq | shm |
+|---|---|---|---|
+| Where does the queue live? | process heap | kernel | `MAP_SHARED` memory |
+| Who wakes a blocked receiver? | `pthread_cond_signal(&not_empty)` | kernel on `mq_send` | `sem_post(&items)` |
+| Who wakes a blocked submitter? | `signal(&not_full)` | kernel on `mq_receive` | `sem_post(&empty_slots)` |
+| Who picks the highest priority? | user code (`best_task_index`) | **the kernel** | user code (`best_task_index`) |
+| Runs on signals? | no | yes (`EINTR` retry) | yes (`EINTR` retry) |
+| `pshared` flag? | n/a (threads) | n/a | **must be `1`** |
+| Capacity limit? | heap | `fs.mqueue.msg_max` | heap |
+
