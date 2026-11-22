@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 400" width="1000" height="400" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/></marker><marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3fb950"/></marker></defs>
+<rect width="1000" height="400" rx="14" fill="#161b22"/>
+<rect x="20" y="10" width="960" height="380" rx="10" fill="#1c2330"/>
+<text x="500.0" y="36" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="20" font-weight="700" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">TCP = byte stream  ·  UDP = datagrams</text>
+<text x="500.0" y="62" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" font-weight="400" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">message boundaries: TCP forgets them, UDP keeps them</text>
+<text x="60" y="100" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" font-weight="700" fill="#e6edf3" text-anchor="start" dominant-baseline="central">📤 TCP sender: 3 × send()</text>
+<rect x="60" y="120" width="90" height="36" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="105.0" y="138.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">HELLO</text>
+<rect x="160" y="120" width="90" height="36" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="205.0" y="138.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">WORLD</text>
+<rect x="260" y="120" width="90" height="36" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="305.0" y="138.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">BYE\n</text>
+<text x="60" y="190" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" font-weight="700" fill="#e6edf3" text-anchor="start" dominant-baseline="central">📥 TCP receiver: recv() may return any split of the same bytes</text>
+<rect x="60" y="210" width="150" height="36" rx="6" fill="#12301c" stroke="#3fb950" stroke-width="2"/>
+<text x="135.0" y="228.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">HELLOWO</text>
+<rect x="220" y="210" width="150" height="36" rx="6" fill="#12301c" stroke="#3fb950" stroke-width="2"/>
+<text x="295.0" y="228.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">RLDBYE\n</text>
+<text x="420" y="228" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="13" font-weight="400" fill="#f0883e" text-anchor="start" dominant-baseline="central">← boundaries are lost; you must frame (\n, length prefix)</text>
+<text x="60" y="290" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" font-weight="700" fill="#e6edf3" text-anchor="start" dominant-baseline="central">UDP: 1 sendto() = 1 recvfrom()  (or lost / duplicated / reordered)</text>
+<rect x="60" y="310" width="90" height="36" rx="6" fill="#3a2a12" stroke="#f0883e" stroke-width="2"/>
+<text x="105.0" y="328.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">HELLO</text>
+<rect x="160" y="310" width="90" height="36" rx="6" fill="#3a2a12" stroke="#f0883e" stroke-width="2"/>
+<text x="205.0" y="328.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">WORLD</text>
+<rect x="260" y="310" width="90" height="36" rx="6" fill="#3a2a12" stroke="#f0883e" stroke-width="2"/>
+<text x="305.0" y="328.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">BYE\n</text>
+<text x="380" y="328" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="13" font-weight="400" fill="#9aa4b2" text-anchor="start" dominant-baseline="central">✂️ whole messages only, but no delivery guarantee</text>
+</svg>

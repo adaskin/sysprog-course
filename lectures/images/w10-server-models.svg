@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 430" width="1000" height="430" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/></marker><marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3fb950"/></marker></defs>
+<rect width="1000" height="430" rx="14" fill="#161b22"/>
+<rect x="20" y="10" width="960" height="410" rx="10" fill="#1c2330"/>
+<text x="500.0" y="36" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="20" font-weight="700" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">Four ways to serve many clients</text>
+<text x="500.0" y="62" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" font-weight="400" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">one listening socket, different ways to handle accepted connections</text>
+<rect x="45" y="100" width="215" height="70" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="152.5" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">🐢 Iterative</text>
+<rect x="45" y="200" width="215" height="60" rx="6" fill="#12301c" stroke="#3fb950" stroke-width="2"/>
+<text x="152.5" y="230.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">accept → handle → close</text>
+<rect x="45" y="290" width="215" height="60" rx="6" fill="#3a2a12" stroke="#f0883e" stroke-width="2"/>
+<text x="152.5" y="320.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="13" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">one client at a time</text>
+<line x1="152" y1="170" x2="152" y2="200" stroke="#58a6ff" stroke-width="2" marker-end="url(#a)"/>
+<line x1="152" y1="260" x2="152" y2="290" stroke="#3fb950" stroke-width="2" marker-end="url(#g)"/>
+<rect x="280" y="100" width="215" height="70" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="387.5" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">🍴 fork()</text>
+<rect x="280" y="200" width="215" height="60" rx="6" fill="#12301c" stroke="#3fb950" stroke-width="2"/>
+<text x="387.5" y="230.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">process per client</text>
+<rect x="280" y="290" width="215" height="60" rx="6" fill="#3a2a12" stroke="#f0883e" stroke-width="2"/>
+<text x="387.5" y="320.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="13" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">isolated, costs memory</text>
+<line x1="387" y1="170" x2="387" y2="200" stroke="#58a6ff" stroke-width="2" marker-end="url(#a)"/>
+<line x1="387" y1="260" x2="387" y2="290" stroke="#3fb950" stroke-width="2" marker-end="url(#g)"/>
+<rect x="515" y="100" width="215" height="70" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="622.5" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">🧵 Thread</text>
+<rect x="515" y="200" width="215" height="60" rx="6" fill="#12301c" stroke="#3fb950" stroke-width="2"/>
+<text x="622.5" y="230.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">thread per client</text>
+<rect x="515" y="290" width="215" height="60" rx="6" fill="#3a2a12" stroke="#f0883e" stroke-width="2"/>
+<text x="622.5" y="320.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="13" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">cheap, shared state → races</text>
+<line x1="622" y1="170" x2="622" y2="200" stroke="#58a6ff" stroke-width="2" marker-end="url(#a)"/>
+<line x1="622" y1="260" x2="622" y2="290" stroke="#3fb950" stroke-width="2" marker-end="url(#g)"/>
+<rect x="750" y="100" width="215" height="70" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="857.5" y="135.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">📡 poll / epoll</text>
+<rect x="750" y="200" width="215" height="60" rx="6" fill="#12301c" stroke="#3fb950" stroke-width="2"/>
+<text x="857.5" y="230.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">one thread, many fds</text>
+<rect x="750" y="290" width="215" height="60" rx="6" fill="#3a2a12" stroke="#f0883e" stroke-width="2"/>
+<text x="857.5" y="320.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="13" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">event loop, scales to 10k+</text>
+<line x1="857" y1="170" x2="857" y2="200" stroke="#58a6ff" stroke-width="2" marker-end="url(#a)"/>
+<line x1="857" y1="260" x2="857" y2="290" stroke="#3fb950" stroke-width="2" marker-end="url(#g)"/>
+<text x="500" y="385" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="14" font-weight="400" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">⚠️ Whatever you pick: the 'listening' socket and the 'connected' sockets are different file descriptors</text>
+</svg>

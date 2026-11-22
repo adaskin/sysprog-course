@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520" width="1000" height="520" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/></marker><marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3fb950"/></marker></defs>
+<rect width="1000" height="520" rx="14" fill="#161b22"/>
+<rect x="20" y="10" width="960" height="500" rx="10" fill="#1c2330"/>
+<text x="500.0" y="36" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="20" font-weight="700" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">TCP socket lifecycle</text>
+<text x="500.0" y="62" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" font-weight="400" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">server and client call sequence</text>
+<text x="250" y="95" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" font-weight="700" fill="#3fb950" text-anchor="middle" dominant-baseline="central">🖥️ Server</text>
+<text x="750" y="95" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="17" font-weight="700" fill="#58a6ff" text-anchor="middle" dominant-baseline="central">💻 Client</text>
+<rect x="150" y="115" width="200" height="44" rx="6" fill="#12301c" stroke="#3fb950" stroke-width="2"/>
+<text x="250.0" y="137.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">socket()</text>
+<rect x="650" y="115" width="200" height="44" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="750.0" y="137.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">socket()</text>
+<line x1="250" y1="159" x2="250" y2="180" stroke="#3fb950" stroke-width="2" marker-end="url(#g)"/>
+<rect x="150" y="180" width="200" height="44" rx="6" fill="#12301c" stroke="#3fb950" stroke-width="2"/>
+<text x="250.0" y="202.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">bind()</text>
+<line x1="250" y1="224" x2="250" y2="245" stroke="#3fb950" stroke-width="2" marker-end="url(#g)"/>
+<rect x="150" y="245" width="200" height="44" rx="6" fill="#12301c" stroke="#3fb950" stroke-width="2"/>
+<text x="250.0" y="267.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">listen()</text>
+<line x1="250" y1="289" x2="250" y2="310" stroke="#3fb950" stroke-width="2" marker-end="url(#g)"/>
+<rect x="150" y="310" width="200" height="44" rx="6" fill="#12301c" stroke="#3fb950" stroke-width="2"/>
+<text x="250.0" y="332.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">accept()  (blocks)</text>
+<rect x="650" y="310" width="200" height="44" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="750.0" y="332.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">connect()</text>
+<line x1="250" y1="354" x2="250" y2="375" stroke="#3fb950" stroke-width="2" marker-end="url(#g)"/>
+<rect x="150" y="375" width="200" height="44" rx="6" fill="#12301c" stroke="#3fb950" stroke-width="2"/>
+<text x="250.0" y="397.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">recv() / send()</text>
+<rect x="650" y="375" width="200" height="44" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="750.0" y="397.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">send() / recv()</text>
+<line x1="250" y1="419" x2="250" y2="440" stroke="#3fb950" stroke-width="2" marker-end="url(#g)"/>
+<rect x="150" y="440" width="200" height="44" rx="6" fill="#12301c" stroke="#3fb950" stroke-width="2"/>
+<text x="250.0" y="462.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">close()</text>
+<rect x="650" y="440" width="200" height="44" rx="6" fill="#14304f" stroke="#58a6ff" stroke-width="2"/>
+<text x="750.0" y="462.0" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="15" font-weight="400" fill="#e6edf3" text-anchor="middle" dominant-baseline="central">close()</text>
+<line x1="250" y1="159" x2="250" y2="180" stroke="#3fb950" stroke-width="2" marker-end="url(#g)"/>
+<line x1="750" y1="159" x2="750" y2="310" stroke="#58a6ff" stroke-width="2" marker-end="url(#a)"/>
+<line x1="650" y1="332" x2="350" y2="332" stroke="#f0883e" stroke-width="2" marker-end="url(#a)" stroke-dasharray="6 4"/>
+<text x="500" y="318" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="13" font-weight="400" fill="#f0883e" text-anchor="middle" dominant-baseline="central">SYN → SYN-ACK → ACK (3-way handshake)</text>
+<line x1="650" y1="397" x2="350" y2="397" stroke="#58a6ff" stroke-width="2" marker-end="url(#a)"/>
+<line x1="350" y1="407" x2="650" y2="407" stroke="#3fb950" stroke-width="2" marker-end="url(#g)"/>
+<text x="500" y="383" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="13" font-weight="400" fill="#9aa4b2" text-anchor="middle" dominant-baseline="central">bytes in both directions (a byte stream!)</text>
+<line x1="650" y1="462" x2="350" y2="462" stroke="#f0883e" stroke-width="2" marker-end="url(#a)" stroke-dasharray="6 4"/>
+<text x="500" y="448" font-family="'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif" font-size="13" font-weight="400" fill="#f0883e" text-anchor="middle" dominant-baseline="central">FIN / ACK  →  recv() returns 0</text>
+</svg>
