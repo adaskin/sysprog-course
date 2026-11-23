@@ -35,6 +35,8 @@ int main(void) {
     socklen_t len = sizeof(localinfo);
     getsockname(sfd, (struct sockaddr *)&localinfo, &len);
     print_socket_info("local info", &localinfo);
+    /* NOTE: TCP is a byte stream: this single recv() may return only part of
+     * the server's reply. Fine for a short demo; real code must loop/frame. */
     /*send recv message*/
     char msg[] = "client says hi";
     char buf[256] = {0};
