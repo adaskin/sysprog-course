@@ -49,15 +49,21 @@ int main(void) {
     }
     print_socket_info("accepted client", &accepted_addr);
 
-    char buf[256] = {0};
-    /*recv send message*/
-    int r = recv(sfd_accepted, &buf[0], sizeof(buf) - 1, 0);
-    if (r > 0) { /* -1: error, 0: peer closed */
-        printf("server: incoming message: %.255s\n", buf);
+    /* NOTE: TCP is a byte STREAM, not a message protocol. One send() on the
+     * client does not guarantee one recv() here: a "message" can arrive split
+     * in pieces or glued to the next one. Real protocols need framing
+     * (a delimiter or a length prefix, see lecture 10b). This loop simply
+     * reads until the client closes the connection. */
+    char buf[256];
+    ssize_t r;
+    while ((r = recv(sfd_accepted, buf, sizeof(buf) - 1, 0)) > 0) {
+        buf[r] = '\0'; /* recv does not NUL-terminate */
+        printf("server: received %zd bytes: %s\n", r, buf);
         char msg[] = "server says hi";
-        int b = send(sfd_accepted, msg, sizeof(msg), 0);
-        printf("server sent %d byte msg\n", b);
+        ssize_t b = send(sfd_accepted, msg, sizeof(msg), 0);
+        printf("server sent %zd byte msg\n", b);
     }
+    if (r == -1) perror("recv"); /* r == 0: the client closed normally */
 
     close(sfd_accepted);
 

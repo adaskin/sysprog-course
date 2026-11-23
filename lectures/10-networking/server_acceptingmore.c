@@ -41,7 +41,18 @@ int main(void) {
     struct sockaddr_in accepted_addr;
     memset(&accepted_addr, 0, sizeof(accepted_addr));
     socklen_t size = sizeof(accepted_addr);
+    /* TODO (students): this server handles ONE client at a time. While it
+     * talks to a client (the recv loop below), every other client waits in the
+     * listen() queue. Convert it so that clients are served concurrently:
+     *   (a) multiprocess: fork() a child per accepted connection; the child
+     *       closes sfd and serves the client, the parent closes sfd_accepted.
+     *       Avoid zombies (signal(SIGCHLD, SIG_IGN) or waitpid with WNOHANG).
+     *   (b) multithread: pthread_create() a (detached) thread per connection.
+     *       Give each thread its OWN copy of the fd (do not pass the address
+     *       of a loop variable: data race!).
+     * Test with several clients at once, e.g. `nc 127.0.0.1 5100` in 3 terminals. */
     for (;;) {
+        size = sizeof(accepted_addr); /* accept() overwrites it: reset every time */
         int sfd_accepted =
             accept(sfd, (struct sockaddr *)&accepted_addr, &size);
         if (sfd_accepted == -1) {
@@ -50,15 +61,21 @@ int main(void) {
         }
         print_socket_info("accepted client", &accepted_addr);
 
-        char buf[256] = {0};
-        /*recv send message*/
-        int r = recv(sfd_accepted, &buf[0], sizeof(buf) - 1, 0);
-        if (r > 0) { /* -1: error, 0: peer closed */
-            printf("server: incoming message: %.255s\n", buf);
+        /* NOTE: TCP is a byte STREAM, not a message protocol. One send() on the
+         * client does not guarantee one recv() here: a "message" can arrive split
+         * in pieces or glued to the next one. Real protocols need framing
+         * (a delimiter or a length prefix, see lecture 10b). This loop simply
+         * reads until the client closes the connection. */
+        char buf[256];
+        ssize_t r;
+        while ((r = recv(sfd_accepted, buf, sizeof(buf) - 1, 0)) > 0) {
+            buf[r] = '\0'; /* recv does not NUL-terminate */
+            printf("server: received %zd bytes: %s\n", r, buf);
             char msg[] = "server says hi";
-            int b = send(sfd_accepted, msg, sizeof(msg), 0);
-            printf("server sent %d byte msg\n", b);
+            ssize_t b = send(sfd_accepted, msg, sizeof(msg), 0);
+            printf("server sent %zd byte msg\n", b);
         }
+        if (r == -1) perror("recv"); /* r == 0: the client closed normally */
 
         close(sfd_accepted);
     }
