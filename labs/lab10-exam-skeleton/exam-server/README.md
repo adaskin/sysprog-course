@@ -1,19 +1,19 @@
-# exam-server: the server program
+# exam-server
 
-One server, many students. `exam.c` (given) holds the exam protocol and grading; you write how the server waits for and serves clients:
+Protocol dispatch in `conn_serve()` is **given**. All student server code is in `servers.c`:
 
-| TODO | File | |
+| TODO | Function | Model |
 |---|---|---|
-| 3 | `conn.c` | `conn_serve()`: process the request lines in the buffer |
-| 4 | `srv_iterative.c` | one client at a time |
-| 5 | `srv_thread.c` | thread per connection |
-| 6 | `srv_poll.c` | one thread, `poll()` |
-| 7 | `srv_epoll.c` | one thread, `epoll` |
-| 8 | `srv_fork.c` | process per connection (homework) |
-| 9 | `srv_select.c` | one thread, `select()` (homework) |
+| 2 | `run_iterative()` | One accepted client at a time |
+| 3 | `run_thread()` | Thread per connection |
+| 4 | `run_poll()` | One-thread `poll()` loop |
+| 5 | `run_select()` | One-thread `select()` loop |
+| 6 | `run_fork()` | Process per connection |
+| 7 | `run_epoll()` | One-thread `epoll` loop |
 
-Framing and `send_all` (TODO 1–2) are in `../common/linebuf.c`.
+`server.h` declares the shared connection state, helpers, and these functions. `main.c` gives the listening socket, `serve_client()`, `set_nonblocking()`, and all signal handling. `exam.c` gives the application protocol and grading.
 
 ```bash
-bin/examsrv thread 5200      # MODE = iterative | thread | fork | select | poll | epoll
+bin/examsrv iterative 5200
+# Other modes: thread | fork | select | poll | epoll
 ```
