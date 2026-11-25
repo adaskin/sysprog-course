@@ -3,7 +3,7 @@ CFLAGS  = -std=gnu11 -O2 -g -Wall -Wextra -Wpedantic -pthread -Iprotocol -Iexam-
 LDLIBS  = -pthread
 
 PROTOCOL = protocol/linebuf.c
-SERVER   = exam-server/main.c exam-server/exam.c exam-server/servers.c
+SERVER   = exam-server/server.c exam-server/exam.c
 STUDENT  = student/student.c
 MODES    = iterative thread fork select poll epoll
 
