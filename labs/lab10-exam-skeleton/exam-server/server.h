@@ -1,31 +1,34 @@
-/* server.h -- per-connection state of the exam server and the helper YOU
- * implement in conn.c. The line framing itself lives in ../common/linebuf.c. */
+/* server.h -- the ONLY server interface header. */
 #ifndef SERVER_H
 #define SERVER_H
 
+#include <signal.h>
 #include <sys/types.h>
 #include "exam.h"
 #include "linebuf.h"
 
 typedef struct {
-    linebuf_t lb;           /* socket fd + received-bytes buffer (lb.fd is the client socket) */
-    session_t sess;         /* login state, owned by the exam service */
+    linebuf_t lb;
+    session_t sess;
 } conn_t;
 
-/* GIVEN (main.c): initialise for a freshly accepted socket. */
+extern volatile sig_atomic_t g_stop; /* set by the GIVEN handler in main.c */
+
+/* GIVEN helpers in main.c. */
 void conn_init(conn_t *c, int fd);
-
-/* GIVEN (main.c): one recv() into the connection buffer = lb_read(&c->lb).
- *   >0 bytes appended, 0 peer closed, -1 error (EAGAIN: nothing yet on a
- *   non-blocking socket; EINTR: interrupted). */
 ssize_t conn_read(conn_t *c);
+int set_nonblocking(int fd);
+void serve_client(int fd);       /* read loop + close for blocking workers */
 
-/* TODO 3 (conn.c): process EVERY complete request line currently in the buffer:
- *   loop lb_next_line -> exam_handle_line -> send_all.
- *   too long line  -> send "ERR TOOLONG\n" (strlen bytes, no NUL) and return -1
- *   QUIT (close_after) -> send the reply and return -1
- *   send_all fails -> return -1
- * Returns 0 if the connection stays open, -1 if the caller must close it. */
+/* GIVEN in servers.c: dispatch every complete request already buffered. */
 int conn_serve(conn_t *c);
+
+/* Student server models in servers.c. The listener is already bound. */
+int run_iterative(int listen_fd); /* TODO 2: accept + serve one at a time */
+int run_thread(int listen_fd);    /* TODO 3: thread per connection */
+int run_poll(int listen_fd);      /* TODO 4: one-thread poll event loop */
+int run_select(int listen_fd);    /* TODO 5: one-thread select event loop */
+int run_fork(int listen_fd);      /* TODO 6: process per connection */
+int run_epoll(int listen_fd);     /* TODO 7: one-thread epoll event loop */
 
 #endif
