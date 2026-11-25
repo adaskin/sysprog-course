@@ -21,9 +21,9 @@ OK=$(find "$OUT" -name '*.ok' | wc -l)
 SECS=$(awk -v a="$START" -v b="$END" 'BEGIN{printf "%.2f", b-a}')
 echo "students: $OK/$N ok in ${SECS}s"
 if [ "$OK" -ne "$N" ]; then
-    find "$OUT" -name '*.err' | head -3 | while read -r f; do
+    find "$OUT" -name '*.err' | while read -r f; do
         [ -s "$f" ] && echo "  e.g. $(basename "$f" .err): $(head -1 "$f")"
-    done
+    done | head -3
 fi
 [ -n "${SHOW:-}" ] && cat "$OUT"/*.out | tail -n 5
 rm -rf "$OUT"
