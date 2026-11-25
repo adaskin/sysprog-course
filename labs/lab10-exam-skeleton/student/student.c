@@ -17,10 +17,11 @@
 
 #define MAX_REPLY_LINES (MAX_Q + 2 + MAX_Q)
 
-/* GIVEN: checked integer conversion; rejects junk, overflow, and bad ranges. */
-static int parse_int_in_range(const char *text, int min, int max, int *out)
-{
-    char *end;
+/* GIVEN: checked integer conversion; rejects junk, overflow, and bad
+ * ranges. */
+static int parse_int_in_range(const char* text, int min, int max,
+                              int* out) {
+    char* end;
     if (!text || !*text) return -1;
     errno = 0;
     long value = strtol(text, &end, 10);
@@ -31,29 +32,28 @@ static int parse_int_in_range(const char *text, int min, int max, int *out)
 }
 
 /* GIVEN: the protocol's end-of-reply rule. */
-static int protocol_reply_finished(const char *line)
-{
+static int protocol_reply_finished(const char* line) {
     return !strcmp(line, "END") || !strcmp(line, "OK") ||
            !strcmp(line, "BYE") || !strncmp(line, "OK ", 3) ||
            !strncmp(line, "ERR ", 4);
 }
 
-/* TODO S1: create an AF_INET/SOCK_STREAM socket, fill sockaddr_in with
- * htons(port) and inet_pton(host), call connect(), and return the fd.
- * Close the fd and return -1 on failure. This is your FIRST client connection. */
-static int connect_to_server(const char *host, int port)
-{
+/* TODO S1: create an AF_INET/SOCK_STREAM socket, fill sockaddr_in
+ * with htons(port) and inet_pton(host), call connect(), and return
+ * the fd. Close the fd and return -1 on failure. This is your FIRST
+ * client connection. */
+static int connect_to_server(const char* host, int port) {
     (void)host;
     (void)port;
     return -1;
 }
 
 /* GIVEN: read ONE complete reply, retaining bytes for later replies.
- * line_buffer_next_line() may report a partial reply; line_buffer_receive()
- * may also append several replies at once. Never equate recv() with one line. */
-static int read_protocol_reply(line_buffer_t *buffer,
-                               char lines[][MAX_LINE + 1], int max)
-{
+ * line_buffer_next_line() may report a partial reply;
+ * line_buffer_receive() may also append several replies at once.
+ * Never equate recv() with one line. */
+static int read_protocol_reply(line_buffer_t* buffer,
+                               char lines[][MAX_LINE + 1], int max) {
     int count = 0;
     if (max <= 0) {
         errno = EINVAL;
@@ -79,7 +79,7 @@ static int read_protocol_reply(line_buffer_t *buffer,
         ssize_t n = line_buffer_receive(buffer);
         if (n > 0) continue;
         if (n < 0 && errno == EINTR) continue;
-        return -1;                       /* EOF or a hard I/O error */
+        return -1; /* EOF or a hard I/O error */
     }
 }
 
@@ -87,15 +87,15 @@ static int read_protocol_reply(line_buffer_t *buffer,
  *   LOGIN -> require an OK reply and parse num_questions;
  *   QUESTIONS -> read Q lines through END;
  *   usleep(think_ms * 1000);
- *   SUBMIT <answers> -> answers may simply be num_questions 'A' letters;
- *   RESULT -> remember the SCORE <s>/<n> line;
- *   QUIT -> require BYE;
- *   print "student <id>: score <s>/<n>" and return 0.
- * Use socket_send_all(), line_buffer_init(), and read_protocol_reply().
- * Check snprintf() results: a request may use at most MAX_LINE bytes including
- * its newline. Use parse_int_in_range() for numeric fields, not atoi(). */
-static int run_exam_session(int fd, int id, const char *pin, int think_ms)
-{
+ *   SUBMIT <answers> -> answers may simply be num_questions 'A'
+ * letters; RESULT -> remember the SCORE <s>/<n> line; QUIT -> require
+ * BYE; print "student <id>: score <s>/<n>" and return 0. Use
+ * socket_send_all(), line_buffer_init(), and read_protocol_reply().
+ * Check snprintf() results: a request may use at most MAX_LINE bytes
+ * including its newline. Use parse_int_in_range() for numeric fields,
+ * not atoi(). */
+static int run_exam_session(int fd, int id, const char* pin,
+                            int think_ms) {
     (void)fd;
     (void)id;
     (void)pin;
@@ -104,10 +104,11 @@ static int run_exam_session(int fd, int id, const char *pin, int think_ms)
     return -1;
 }
 
-int main(int argc, char **argv)                 /* GIVEN */
+int main(int argc, char** argv) /* GIVEN */
 {
     if (argc < 5 || argc > 6) {
-        fprintf(stderr, "usage: %s HOST PORT ID PIN [THINK_MS]\n", argv[0]);
+        fprintf(stderr, "usage: %s HOST PORT ID PIN [THINK_MS]\n",
+                argv[0]);
         return 2;
     }
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """GIVEN protocol checks; this test client is not the student deliverable."""
+
 import argparse
 import asyncio
 import csv
@@ -74,8 +75,10 @@ async def student_session(port, sid, data, think=0.05, chunked=False, wrong=5):
             reply = await agent.ask(f"LOGIN {sid} {pin}\r\n")
         expect(reply[0].startswith("OK"), f"login: {reply}")
         reply = await agent.ask("QUESTIONS\n")
-        expect(reply[-1] == "END" and len(reply) == nq[exam] + 1,
-               f"questions: {len(reply)} lines")
+        expect(
+            reply[-1] == "END" and len(reply) == nq[exam] + 1,
+            f"questions: {len(reply)} lines",
+        )
         await asyncio.sleep(think)
         answers = [key[(exam, q)] for q in range(1, nq[exam] + 1)]
         for q in range(wrong):
@@ -83,8 +86,9 @@ async def student_session(port, sid, data, think=0.05, chunked=False, wrong=5):
         reply = await agent.ask("SUBMIT " + "".join(answers) + "\n")
         expect(reply == ["OK"], f"submit: {reply}")
         reply = await agent.ask("RESULT\n")
-        expect(reply[0] == f"SCORE {nq[exam] - wrong}/{nq[exam]}",
-               f"result: {reply[0]}")
+        expect(
+            reply[0] == f"SCORE {nq[exam] - wrong}/{nq[exam]}", f"result: {reply[0]}"
+        )
         expect(sum(x.startswith("WRONG") for x in reply) == wrong, "wrong-lines")
         reply = await agent.ask("QUIT\n")
         expect(reply == ["BYE"], f"quit: {reply}")
@@ -125,12 +129,17 @@ async def run_checks(port, data, skip_idle=False):
         await agent.ask(f"LOGIN {sid2} {pin2}\n")
         answers = "A" * nq[exam2]
         expect((await agent.ask(f"SUBMIT {answers}\n")) == ["OK"], "first submit")
-        expect((await agent.ask(f"SUBMIT {answers}\n")) == ["ERR DUPLICATE"], "second submit")
+        expect(
+            (await agent.ask(f"SUBMIT {answers}\n")) == ["ERR DUPLICATE"],
+            "second submit",
+        )
         await agent.close()
         other = await Agent().open(port)
         await other.ask(f"LOGIN {sid2} {pin2}\n")
-        expect((await other.ask(f"SUBMIT {answers}\n")) == ["ERR DUPLICATE"],
-               "duplicate on a new connection")
+        expect(
+            (await other.ask(f"SUBMIT {answers}\n")) == ["ERR DUPLICATE"],
+            "duplicate on a new connection",
+        )
         await other.close()
 
     async def pipelined():
@@ -139,8 +148,10 @@ async def run_checks(port, data, skip_idle=False):
         r1 = await agent.read_protocol_reply()
         r2 = await agent.read_protocol_reply()
         r3 = await agent.read_protocol_reply()
-        expect(r1[0].startswith("OK") and r2[-1] == "END" and r3 == ["BYE"],
-               f"{r1[:1]} {r2[-1:]} {r3}")
+        expect(
+            r1[0].startswith("OK") and r2[-1] == "END" and r3 == ["BYE"],
+            f"{r1[:1]} {r2[-1:]} {r3}",
+        )
         await agent.close()
 
     async def chunked():
