@@ -1,14 +1,14 @@
-/* srv_epoll.c -- YOUR FILE. One thread, Linux epoll event loop (TODO 8). */
+/* srv_epoll.c -- YOUR FILE. One thread, Linux epoll event loop (TODO 7). */
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
 
-#include "conn.h"
+#include "server.h"
 #include "srv.h"
 
 #include <sys/epoll.h>
 
-/* TODO 8: event loop with epoll (level-triggered is enough).
+/* TODO 7: event loop with epoll (level-triggered is enough).
  *
  * Required behavior:
  *   - epoll_create1(0); register the listener (EPOLLIN) and every accepted,
@@ -30,6 +30,6 @@
  * three event-loop servers but only one client in thread/fork? */
 int run_epoll(int listen_fd) {
     (void)listen_fd;
-    fprintf(stderr, "run_epoll: TODO 8 not implemented\n");
+    fprintf(stderr, "run_epoll: TODO 7 not implemented\n");
     return -1;
 }

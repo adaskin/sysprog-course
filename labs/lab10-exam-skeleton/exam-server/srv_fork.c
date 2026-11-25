@@ -1,12 +1,12 @@
-/* srv_fork.c -- YOUR FILE. One process per connection (TODO 5). */
+/* srv_fork.c -- YOUR FILE. One process per connection (TODO 8, homework). */
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
 
-#include "conn.h"
+#include "server.h"
 #include "srv.h"
 
-/* TODO 5: process-per-connection server.
+/* TODO 8 (homework): process-per-connection server.
  *
  * Required behavior:
  *   - accept() in a loop until g_stop (retry on EINTR).
@@ -23,6 +23,6 @@
  * to a thread? */
 int run_fork(int listen_fd) {
     (void)listen_fd;
-    fprintf(stderr, "run_fork: TODO 5 not implemented\n");
+    fprintf(stderr, "run_fork: TODO 8 not implemented\n");
     return -1;
 }

@@ -1,7 +1,8 @@
 /* exam.h -- GIVEN. The exam service: protocol logic with NO networking.
  *
- * The five servers you write (thread, fork, select, poll, epoll) all call the
- * same function, exam_handle_line(). Only the way they wait for clients differs.
+ * Every server model you write (iterative, thread, fork, select, poll, epoll)
+ * calls the same function, exam_handle_line(). Only the way the server waits
+ * for its many students differs.
  *
  * Thread-safety: the database is read-only after exam_db_load(). A submission
  * is stored with open(O_CREAT|O_EXCL), so it is atomic between threads AND
@@ -10,12 +11,9 @@
 #define EXAM_H
 
 #include <stddef.h>
+#include "proto.h"
 
-#define MAX_LINE   512      /* longest request line, including the '\n' */
-#define OUT_MAX    16384    /* largest reply produced by one request */
 #define MAX_EXAMS  8
-#define MAX_Q      32
-#define FIRST_ID   1001     /* student ids are FIRST_ID .. FIRST_ID+n-1 */
 
 typedef struct {
     char name[48];

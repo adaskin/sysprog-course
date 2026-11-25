@@ -1,5 +1,6 @@
-examsrv
+bin/
 results/
 data/
 __pycache__/
 *.o
+.srv.*

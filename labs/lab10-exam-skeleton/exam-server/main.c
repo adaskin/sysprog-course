@@ -1,5 +1,5 @@
-/* main.c -- GIVEN. Usage: ./examsrv MODE [PORT]
- * MODE = thread | fork | select | poll | epoll.  PORT 0 = let the kernel choose.
+/* main.c -- GIVEN. Usage: bin/examsrv MODE [PORT]
+ * MODE = iterative | thread | fork | select | poll | epoll.  PORT 0 = let the kernel choose.
  * Prints "LISTENING <port>" on stdout when ready (the test scripts wait for it). */
 #include <arpa/inet.h>
 #include <errno.h>
@@ -11,8 +11,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "conn.h"
 #include "exam.h"
+#include "server.h"
 #include "srv.h"
 
 volatile sig_atomic_t g_stop = 0;
@@ -21,16 +21,11 @@ static void on_stop(int sig) { (void)sig; g_stop = 1; }
 
 void conn_init(conn_t *c, int fd) {
     memset(c, 0, sizeof(*c));
-    c->fd = fd;
+    lb_init(&c->lb, fd);
     session_init(&c->sess);
 }
 
-ssize_t conn_read(conn_t *c) {
-    if (c->in_len >= sizeof(c->in)) { errno = ENOBUFS; return -1; }
-    ssize_t n = recv(c->fd, c->in + c->in_len, sizeof(c->in) - c->in_len, 0);
-    if (n > 0) c->in_len += (size_t)n;
-    return n;
-}
+ssize_t conn_read(conn_t *c) { return lb_read(&c->lb); }
 
 static int make_listener(int port) {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -49,7 +44,7 @@ static int make_listener(int port) {
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        fprintf(stderr, "usage: %s thread|fork|select|poll|epoll [port]\n", argv[0]);
+        fprintf(stderr, "usage: %s iterative|thread|fork|select|poll|epoll [port]\n", argv[0]);
         return 2;
     }
     int port = argc > 2 ? atoi(argv[2]) : 5200;
@@ -79,7 +74,8 @@ int main(int argc, char **argv) {
     fflush(stdout);
 
     int rc;
-    if (!strcmp(argv[1], "thread"))      rc = run_thread(lfd);
+    if (!strcmp(argv[1], "iterative"))   rc = run_iterative(lfd);
+    else if (!strcmp(argv[1], "thread")) rc = run_thread(lfd);
     else if (!strcmp(argv[1], "fork"))   rc = run_fork(lfd);
     else if (!strcmp(argv[1], "select")) rc = run_select(lfd);
     else if (!strcmp(argv[1], "poll"))   rc = run_poll(lfd);

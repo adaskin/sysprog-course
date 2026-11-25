@@ -1,14 +1,14 @@
-/* srv_select.c -- YOUR FILE. One thread, select() event loop (TODO 6). */
+/* srv_select.c -- YOUR FILE. One thread, select() event loop (TODO 9). */
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
 
-#include "conn.h"
+#include "server.h"
 #include "srv.h"
 
 #include <sys/select.h>
 
-/* TODO 6: event loop with select().   (homework / bonus)
+/* TODO 9: event loop with select().   (homework)
  *
  * Required behavior:
  *   - ONE thread. Keep a table of conn_t* indexed by fd; all client sockets
@@ -28,6 +28,6 @@
  * the cost of one select() call with 500 idle clients? */
 int run_select(int listen_fd) {
     (void)listen_fd;
-    fprintf(stderr, "run_select: TODO 6 not implemented\n");
+    fprintf(stderr, "run_select: TODO 9 not implemented\n");
     return -1;
 }

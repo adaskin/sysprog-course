@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-"""Conformance checks + load test for the exam orchestrator (GIVEN; read it as a
-small example of an asyncio network client -- 'agents' talking to your server).
+"""Protocol conformance checks for the exam server (GIVEN; a small asyncio client
+used only to TEST your server: the student program you write is the real client).
 
-  python3 tools/loadtest.py --port 5200 --clients 300 --label epoll [--pid SERVERPID]
+  python3 tools/check_server.py --port 5200 [--skip-idle]
 
-1. CHECKS : protocol conformance, partial lines, pipelining, long lines, a silent
-            connection that must not block others, abrupt disconnects.
-2. LOAD   : N concurrent 'student agents', each does LOGIN, QUESTIONS, SUBMIT,
-            RESULT, QUIT and verifies its score against the answer key.
-3. HEALTH : with --pid, the server's open fds are counted before/after (leaks)
-            and zombie children are looked for.
-Exit status 0 = PASS, 1 = FAIL.
+Checks: login errors, bad formats, duplicate submit, requests glued together in one
+send, a request sent one byte at a time, a too-long line, clients that vanish in
+the middle of a request, and an idle client that must not block the others.
+--skip-idle: skip the last check (the iterative server fails it by design).
+Exit status 0 = all checks passed, 1 = at least one failed.
 """
 import argparse, asyncio, csv, os, random, sys, time
 
@@ -68,6 +66,7 @@ def expect(cond, msg):
 
 
 async def student_session(port, sid, data, think=0.05, chunked=False, wrong=5):
+    """A scripted student (only used by check_server.py)."""
     key, nq, students = data
     pin, ex = students[sid]["pin"], int(students[sid]["exam_id"])
     a = await Agent().open(port)
@@ -96,7 +95,7 @@ async def student_session(port, sid, data, think=0.05, chunked=False, wrong=5):
         await a.close()
 
 
-async def run_checks(port, data):
+async def run_checks(port, data, skip_idle=False):
     key, nq, students = data
     results = []
 
@@ -175,83 +174,30 @@ async def run_checks(port, data):
                      ("pipelined requests", c_pipelined), ("one byte at a time", c_chunked),
                      ("too-long line", c_toolong), ("abrupt disconnects", c_disconnect),
                      ("idle client does not block", c_silent)]:
+        if skip_idle and name.startswith("idle"):
+            continue
         await check(name, fn())
     return results
 
 
-async def run_load(port, data, clients, concurrency, think):
-    sem = asyncio.Semaphore(concurrency)
-    fails = []
-
-    async def one(i):
-        async with sem:
-            try:
-                await asyncio.wait_for(student_session(
-                    port, FIRST_ID + i, data, think=think * random.random(),
-                    chunked=(i % 7 == 0), wrong=i % 6), 60)
-            except Exception as e:
-                fails.append((i, repr(e)[:80]))
-
-    t0 = time.time()
-    await asyncio.gather(*(one(i) for i in range(clients)))
-    return time.time() - t0, fails
-
-
-def count_fds(pid):
-    try:
-        return len(os.listdir(f"/proc/{pid}/fd"))
-    except OSError:
-        return -1
-
-
-def zombies(pid):
-    try:
-        out = os.popen(f"ps -o stat= --ppid {pid}").read().split()
-        return sum(1 for s in out if s.startswith("Z"))
-    except Exception:
-        return 0
-
-
 async def main_async(a):
     data = load_data()
-    if a.clients > 890:
-        print("note: ids 1901..1904 are reserved for the checks; use --clients <= 890 or edit the reserved ids")
-    fd0 = count_fds(a.pid) if a.pid else -1
-    print(f"== {a.label}: checks")
-    res = await run_checks(a.port, data)
+    res = await run_checks(a.port, data, a.skip_idle)
     for name, ok, why in res:
         print(f"   {'ok  ' if ok else 'FAIL'} {name} {why}")
     bad = sum(1 for _, ok, _ in res if not ok)
-    print(f"== {a.label}: load ({a.clients} agents, {a.concurrency} at a time)")
-    secs, fails = await run_load(a.port, data, a.clients, a.concurrency, a.think)
-    print(f"   {a.clients - len(fails)}/{a.clients} sessions ok in {secs:.2f}s")
-    for i, why in fails[:3]:
-        print(f"   FAIL agent {i}: {why}")
-    leak = zomb = 0
-    if a.pid:
-        await asyncio.sleep(0.5)
-        fd1 = count_fds(a.pid)
-        leak = max(0, fd1 - fd0)
-        zomb = zombies(a.pid)
-        print(f"   server fds: {fd0} -> {fd1}   zombie children: {zomb}")
-    ok = bad == 0 and not fails and leak == 0 and zomb == 0
-    print(f"== {a.label}: {'PASS' if ok else 'FAIL'}   (CSV: {a.label},{a.clients},{secs:.2f})")
-    return 0 if ok else 1
+    return 1 if bad else 0
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=5200)
-    ap.add_argument("--clients", type=int, default=300)
-    ap.add_argument("--concurrency", type=int, default=300, help="agents connected at once")
-    ap.add_argument("--think", type=float, default=0.1, help="max think time (s) between QUESTIONS and SUBMIT")
-    ap.add_argument("--pid", type=int, default=0, help="server pid for fd/zombie checks")
-    ap.add_argument("--label", default="server")
+    ap.add_argument("--skip-idle", action="store_true")
     a = ap.parse_args()
     try:
         sys.exit(asyncio.run(main_async(a)))
     except (ConnectionError, OSError, asyncio.TimeoutError) as e:
-        print(f"== {a.label}: FAIL (cannot talk to the server: {e!r})")
+        print(f"   FAIL cannot talk to the server: {e!r}")
         sys.exit(1)
 
 
