@@ -27,7 +27,7 @@ class Agent:
         self.r, self.w = await asyncio.wait_for(asyncio.open_connection(HOST, port), 10)
         return self
 
-    async def read_reply(self, timeout=10):
+    async def read_protocol_reply(self, timeout=10):
         lines = []
         while True:
             raw = await asyncio.wait_for(self.r.readline(), timeout)
@@ -44,7 +44,7 @@ class Agent:
     async def ask(self, text, timeout=10):
         self.send(text)
         await self.w.drain()
-        return await self.read_reply(timeout)
+        return await self.read_protocol_reply(timeout)
 
     async def close(self):
         self.w.close()
@@ -69,7 +69,7 @@ async def student_session(port, sid, data, think=0.05, chunked=False, wrong=5):
                 agent.send(char)
                 await agent.w.drain()
                 await asyncio.sleep(0.001)
-            reply = await agent.read_reply()
+            reply = await agent.read_protocol_reply()
         else:
             reply = await agent.ask(f"LOGIN {sid} {pin}\r\n")
         expect(reply[0].startswith("OK"), f"login: {reply}")
@@ -136,9 +136,9 @@ async def run_checks(port, data, skip_idle=False):
     async def pipelined():
         agent = await Agent().open(port)
         agent.send(f"LOGIN {sid} {pin}\nQUESTIONS\nQUIT\n")
-        r1 = await agent.read_reply()
-        r2 = await agent.read_reply()
-        r3 = await agent.read_reply()
+        r1 = await agent.read_protocol_reply()
+        r2 = await agent.read_protocol_reply()
+        r3 = await agent.read_protocol_reply()
         expect(r1[0].startswith("OK") and r2[-1] == "END" and r3 == ["BYE"],
                f"{r1[:1]} {r2[-1:]} {r3}")
         await agent.close()
@@ -150,7 +150,7 @@ async def run_checks(port, data, skip_idle=False):
         agent = await Agent().open(port)
         agent.send("X" * 3000)
         await agent.w.drain()
-        reply = await agent.read_reply()
+        reply = await agent.read_protocol_reply()
         expect(reply == ["ERR TOOLONG"], repr(reply))
         await agent.close()
 
