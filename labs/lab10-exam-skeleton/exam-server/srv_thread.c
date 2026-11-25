@@ -1,12 +1,12 @@
-/* srv_thread.c -- YOUR FILE. One thread per connection (TODO 4). */
+/* srv_thread.c -- YOUR FILE. One thread per connection (TODO 5). */
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
 
-#include "conn.h"
+#include "server.h"
 #include "srv.h"
 
-/* TODO 4: thread-per-connection server.
+/* TODO 5: thread-per-connection server.
  *
  * Required behavior:
  *   - accept() in a loop until g_stop; retry on EINTR; keep going on other
@@ -23,6 +23,6 @@
  * Why is no mutex needed anywhere in this lab? */
 int run_thread(int listen_fd) {
     (void)listen_fd;
-    fprintf(stderr, "run_thread: TODO 4 not implemented\n");
+    fprintf(stderr, "run_thread: TODO 5 not implemented\n");
     return -1;
 }

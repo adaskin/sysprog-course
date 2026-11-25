@@ -1,14 +1,14 @@
-/* srv_poll.c -- YOUR FILE. One thread, poll() event loop (TODO 7). */
+/* srv_poll.c -- YOUR FILE. One thread, poll() event loop (TODO 6). */
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
 
-#include "conn.h"
+#include "server.h"
 #include "srv.h"
 
 #include <poll.h>
 
-/* TODO 7: event loop with poll().
+/* TODO 6: event loop with poll().
  *
  * Required behavior: same as select(), but
  *   - keep a dynamic array of struct pollfd plus a parallel array of conn_t*
@@ -22,6 +22,6 @@
  * compared to select()? What still costs O(n) per poll() call? */
 int run_poll(int listen_fd) {
     (void)listen_fd;
-    fprintf(stderr, "run_poll: TODO 7 not implemented\n");
+    fprintf(stderr, "run_poll: TODO 6 not implemented\n");
     return -1;
 }
