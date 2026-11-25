@@ -1,180 +1,367 @@
-# Lab 10: The Exam Orchestrator — Many Agents, One Server
+# Lab 10: The Exam Server — One Client, Then Many
 
-**BIL 322 System Programming**
-**Duration:** one lab session (core) + one week (homework/bonus)
-**Topic:** TCP client/server programming; serving many clients with threads, processes, `poll`, `epoll`, `select`; framing over a byte stream
+**BIL 322 System Programming**  
+**Duration:** one lab session (core) + homework  
+**Topic:** TCP clients and servers, framing, threads, processes, `select`, `poll`, and `epoll`  
 **Starter:** [`lab10-exam-skeleton/`](lab10-exam-skeleton/)
-**Lectures:** 7a/7b (threads), 4/5 (processes), 10a–10c (networking, sockets)
 
 ## Goal
 
-An AI-agent platform has one **orchestrator** (think of an LLM that coordinates workers) and many small **agents** that connect to it. Here the orchestrator runs an exam, and the agents are students:
+The exam server is a mock AI/orchestrator service. Each student agent is a separate TCP client. The questions and grading are deterministic; no real AI service is used.
 
 ```text
- student 1001 ─┐                                       ┌─ data/questions.csv (answer key)
- student 1002 ─┼──── TCP ────>   exam server  ─────────┤
-     ...       │          (ONE program, bin/examsrv)   ├─ data/students.csv (id, pin, exam)
- student 1300 ─┘   MANY copies of bin/student          └─ results/<id>.txt (one submission each)
+ student 1001 ─┐                                      ┌─ data/questions.csv
+ student 1002 ─┼──── TCP ────>  one exam server  ─────┼─ data/students.csv
+     ...       │          bin/examsrv                  └─ results/<id>.txt
+ student 2000 ─┘   many copies of bin/student
 ```
 
-You write **two programs**, in two separate folders:
+You implement two programs:
 
-| Folder | Program | Instances |
-|---|---|---|
-| `exam-server/` | the **exam server** `bin/examsrv` | one |
-| `student/` | the **student** client `bin/student` | many, started at the same time |
+| Program | Instances | Your work |
+|---|---:|---|
+| `bin/student` | Many clients | Connect, send requests, and complete one exam |
+| `bin/examsrv` | One server | Accept connections and serve them using different models |
 
-A student connects, logs in with its id and PIN, asks for its questions, "thinks" for a moment, submits its answers, asks for the result and corrections, and leaves. The server must serve **all** students at once. First you make one student talk to one server; then you change *how the server waits for its clients* five different ways.
+The application logic stays the same. Only the server's concurrency model changes.
 
-**No real AI service is used:** questions, grading and the 1000 mock students are deterministic, so we concentrate on system programming. The exam logic (`exam.c`) is given.
+## Start with one connection
 
-By the end you should be able to:
+Before writing any concurrent server, make **one student client** talk to **one iterative server**:
 
-1. Write a TCP **client** and a TCP **server** that speak a line-based protocol.
-2. Cut lines out of a TCP byte stream (partial reads, several requests in one `recv`) and write all bytes safely.
-3. Explain why a one-client-at-a-time server fails with many clients.
-4. Serve many clients with threads, with processes, and with an event loop (`poll`, `epoll`, `select`).
-5. Explain what each model costs and when it breaks (fd limits, blocking work, slow clients).
+```text
+ student client                         exam server
+      |                                      |
+      | socket(); connect()                  | socket(); bind(); listen()  [given]
+      |------------ TCP connection --------->| accept()
+      |                                      | conn_init()
+      | LOGIN 1001 1234\n                    |
+      |------------------------------------->| conn_read(); conn_serve()
+      |                                      | exam_handle_line()  [given]
+      |                 OK Agent0001 0 20\n  |
+      |<-------------------------------------|
+      | QUESTIONS / SUBMIT / RESULT / QUIT   | same connection
+      |------------------------------------->|
+      |                                      | close(client_fd)
+```
 
-## What is given
+`accept()` returns a **new socket for this client**. The listening socket remains available for later connections. This first working connection is the foundation for every later task.
 
-- `common/proto.h`, `common/linebuf.h`: constants and the shared interface.
-- `exam-server/exam.c`: protocol, CSV loading, grading, duplicate detection. No networking.
-- `exam-server/main.c`: listening socket, `SO_REUSEADDR`, signals (`SIGPIPE` ignored, Ctrl-C sets `g_stop`), `conn_read()`.
-- `student/student.c`: argument parsing and `main()`; the dialogue is yours.
-- `tools/gen_data.py`: seeded data, identical for everyone (1000 students, ids 1001–2000; 3 exams × 20 questions).
-- `tools/run_students.sh N`: starts **N copies of `bin/student` at the same time** and reports how many succeeded and how long it took.
-- `tools/check_server.py`, `tools/test_server.sh`: protocol checks and a full test per server model.
+## What is given, and what is yours?
 
-## Protocol
+### Given — do not modify
 
-Text, one request per line (`\n` or `\r\n`), at most 512 bytes per line. A reply is one or more lines; it is finished when you read a line that is `END` or starts with `OK`, `ERR` or `BYE`.
+- `exam-server/main.c`: command-line handling, listening socket, common helpers, and cleanup.
+- `exam-server/exam.c`, `exam.h`: CSV loading, login, questions, grading, and result storage.
+- `protocol/linebuf.c`: `lb_init()`, `lb_read()`, and `lb_next_line()` framing.
+- `exam-server/servers.c`: `conn_serve()` protocol dispatch.
+- `student/student.c`: `read_reply()` reply collection.
+- `tools/`: deterministic data, protocol checks, and concurrent student runner.
+
+The given parsing and formatting code uses bounded buffers and checked numeric conversions. Invalid ranges, numeric overflow, overlong lines, and formatting truncation are rejected rather than silently accepted.
+
+### Given infrastructure, not assessed in this lab
+
+Signals have not been covered yet. Therefore `main.c` already handles:
+
+- `SIGINT`/`SIGTERM`: sets `g_stop` so server loops can shut down;
+- `SIGPIPE`: closed peers do not terminate the whole server;
+- `SIGCHLD`: children in the `fork` server are reaped automatically.
+
+You do **not** write a signal handler in this lab. Use `send_all()` with `MSG_NOSIGNAL` as shown in the comments.
+
+### Your files
+
+- `protocol/linebuf.c`: TODO 1, reliable sending with `send_all()`.
+- `student/student.c`: TODO S1–S2, connect and complete one client session.
+- `exam-server/servers.c`: TODO 2–7, all six server models.
+
+All server functions are in **one sectioned file**. `server.h` is the only server interface header.
+
+## Protocol and TCP framing
+
+Requests and replies are text lines ending in `\n` or `\r\n`. The maximum request line is 512 bytes including its newline.
 
 | Request | Reply |
 |---|---|
-| `LOGIN <id> <pin>` | `OK <name> <exam_id> <num_questions>` or `ERR BADLOGIN` / `ERR BADFORMAT` |
-| `QUESTIONS` | `Q <n>\|text\|A\|B\|C\|D` for each question, then `END` (`ERR NOLOGIN` if not logged in) |
-| `SUBMIT <answers>` | `OK`, `ERR BADFORMAT`, or `ERR DUPLICATE`. `<answers>` = one letter A–D per question |
-| `RESULT` | `SCORE <s>/<n>`, then `WRONG <q> <yours> <correct>` lines, then `END`; or `ERR NOSUBMISSION` |
-| `QUIT` | `BYE`, then the server closes the connection |
-| anything else | `ERR UNKNOWN`. A line longer than 512 bytes: `ERR TOOLONG` and the server closes |
+| `LOGIN <id> <pin>` | `OK <name> <exam_id> <num_questions>` or an `ERR ...` line |
+| `QUESTIONS` | `Q ...` lines, then `END` |
+| `SUBMIT <answers>` | `OK`, `ERR BADFORMAT`, or `ERR DUPLICATE` |
+| `RESULT` | `SCORE <s>/<n>`, optional `WRONG ...` lines, then `END` |
+| `QUIT` | `BYE`, then the server closes |
+| anything else | `ERR UNKNOWN` |
 
-A submission is stored with `open("results/<id>.txt", O_CREAT | O_EXCL)`: the **first** submission wins, atomically, for threads *and* for processes. That is why this lab needs no mutex and no shared memory (a NOTES question). `exam.c` also sleeps a few milliseconds when it grades (`EXAM_GRADE_DELAY_MS`, default 2) to imitate real work.
+A reply ends at `END`, or at a line beginning with `OK`, `ERR`, or `BYE`.
+
+**TCP does not preserve your sends as messages.** The given line buffer converts its byte stream back into requests:
+
+```text
+client sends:       "LOGIN 1001 1234\nQUESTIONS\n"
+
+possible recv #1:   "LOG"
+possible recv #2:   "IN 1001 1234\nQUES"
+possible recv #3:   "TIONS\n"
+
+line buffer:        [partial bytes until '\n' arrives]
+                         |
+                         +--> complete line: "LOGIN 1001 1234"
+                         +--> keep leftover: "QUESTIONS" until its '\n' arrives
+```
+
+One `recv()` can therefore contain half a request, one request, or several requests. The buffer must retain an incomplete line and any requests after the line just consumed. `send()` can also write fewer bytes than requested.
+
+For your own request formatting, use bounded `snprintf()` and check its return value whenever the returned length drives `send_all()`. Do not use `atoi()` for numeric reply fields: use the given checked `parse_int()` helper.
 
 ## Setup
 
 ```bash
 cd labs/lab10-exam-skeleton
-make data        # creates data/ (do not commit it)
-make             # builds bin/examsrv and bin/student (the stubs compile; the programs do nothing yet)
+make data        # generate the same mock students and questions for everyone
+make             # the stubs compile
 ```
 
-Try the protocol by hand once your server runs: `printf 'LOGIN 1001 <pin>\nQUIT\n' | nc 127.0.0.1 5200` (pins are in `data/students.csv`).
-
-## Part A — Core (lab session)
-
-### Task 1: One student, one server (35%)
-
-Write the shared framing, the first server and the student, then connect them.
-
-1. **TODO 1–2** `common/linebuf.c`: `lb_next_line()` (cut one complete line out of the receive buffer; handle `\r\n`, a line arriving byte by byte, several lines in one `recv`, too-long lines) and `send_all()` (partial `send`, `EINTR`, `EAGAIN` + `poll(POLLOUT)`, `MSG_NOSIGNAL`). Both programs use this file.
-2. **TODO 3** `exam-server/conn.c`: `conn_serve()` processes every complete line in the buffer with `exam_handle_line()` and sends the replies.
-3. **TODO 4** `exam-server/srv_iterative.c`: the simplest server. `accept` a client, serve it until it leaves, `accept` the next one.
-4. **TODO S1–S3** `student/student.c`: `connect_to()`, `read_reply()` and `run_session()` (LOGIN, QUESTIONS, think, SUBMIT, RESULT, QUIT). Answer however you like.
+Use two terminals for the first manual test:
 
 ```bash
-bin/examsrv iterative 5200 &
+# Terminal 1
+bin/examsrv iterative 5200
+
+# Terminal 2
 PIN=$(awk -F, '$1==1001 {print $3}' data/students.csv)
-bin/student 127.0.0.1 5200 1001 $PIN       # prints: student 1001: score 4/20
+bin/student 127.0.0.1 5200 1001 "$PIN"
 ```
 
-### Task 2: Many students, one iterative server (5%)
+The server creates `results/` automatically. Use `make reset` when you want to clear old submissions and run the same students again.
+
+# Core lab
+
+## Task 1: Reliable sending, one server connection, and one client (37%)
+
+### 1a. Reliable sending — TODO 1
+
+In `protocol/linebuf.c`, implement `send_all()`:
+
+- Loop until every byte is sent.
+- Handle partial sends and retry after `EINTR`.
+- On nonblocking `EAGAIN`/`EWOULDBLOCK`, wait for `POLLOUT` with `poll()` and continue.
+- Use `MSG_NOSIGNAL`.
+
+The framing functions are given. Read `lb_next_line()` and `conn_serve()` to see how they process every complete line already buffered without losing a partial line or later messages.
+
+### 1b. One accepted server connection — TODO 2
+
+In `run_iterative()` in `exam-server/servers.c`:
+
+- Call `accept()` and then the given `serve_client(client_fd)`.
+- Only after that client finishes may you accept the next client.
+- Retry `accept()` after `EINTR` unless `g_stop` is set.
+- A client failure must not stop the listener.
+
+The given `serve_client(fd)` owns the read loop and closes the descriptor. The given `conn_serve()` dispatches requests and sends replies. At this stage, a second client waits until the first client finishes.
+
+### 1c. One student client — TODO S1–S2
+
+In `student/student.c` implement:
+
+1. `connect_to()`: `socket`, IPv4 address/port setup, `connect`, and error handling.
+2. `run_session()`: `LOGIN`, `QUESTIONS`, think, `SUBMIT`, `RESULT`, and `QUIT`.
+
+`read_reply()` is given. It collects lines until the reply terminator while preserving bytes belonging to later replies. Answer every question with `A` if you want; parsing individual questions is optional. The final output line must be:
+
+```text
+student <id>: score <s>/<n>
+```
+
+Check your first complete version:
+
+```bash
+make test MODE=iterative
+```
+
+## Task 2: Observe the iterative bottleneck (5%)
 
 ```bash
 make reset
-sh tools/run_students.sh 20 5200           # 20 student programs at once
+sh tools/run_students.sh 20 5200
 ```
 
-How long does it take? Each student thinks for 100 ms, and the server waits for it. What do the other 19 students do in the meantime? Write the answer in `NOTES.md`. This is the problem the rest of the lab solves.
+Each student thinks for 100 ms after receiving its questions. While the iterative server waits for that client's next request, the other clients cannot be served. Record the elapsed time and explain it in one or two sentences in `NOTES.md`.
 
-### Task 3: Thread per connection — TODO 5, `srv_thread.c` (15%)
+## Task 3: Thread per connection — TODO 3 (15%)
 
-Accept in a loop; give each client a detached thread with its **own** `conn_t` (never pass the address of a loop variable). Close the fd when done.
+In `run_thread()`:
+
+```text
+                         accept loop (main thread)
+                                   |
+                 +-----------------+-----------------+
+                 |                 |                 |
+          new heap arg (fd)  new heap arg (fd)  new heap arg (fd)
+                 |                 |                 |
+          worker thread A    worker thread B    worker thread C
+          serve_client(fd)   serve_client(fd)   serve_client(fd)
+          can block          can block          can block
+```
+
+- Allocate a separate heap argument for every accepted client.
+- Start a detached thread whose argument owns that client fd.
+- The worker calls `serve_client(fd)` and frees its own argument.
+- Never pass the address of an `accept`-loop variable to a thread.
+
+One worker may wait for its client while the others continue.
 
 ```bash
-make test MODE=thread       # server checks + 300 students at once
+make test MODE=thread
 ```
 
-### Task 4: One thread, `poll()` — TODO 6, `srv_poll.c` (15%)
+## Task 4: One thread with `poll()` — TODO 4 (15%)
 
-A growing array of `struct pollfd` plus the matching `conn_t*`; non-blocking client sockets; close on EOF, error, `POLLHUP`, or when `conn_serve()` says so. Remove a closed client by swapping in the last entry, and be careful while iterating.
+`poll` uses a different approach: **one thread watches many socket descriptors**.
+
+```text
+        listener fd + client fd A + client fd B + client fd C
+                               |
+                               v
+                      poll(..., 1000 ms)
+                               |
+                     only descriptors now ready
+                               |
+              +----------------+----------------+
+              |                                 |
+       listener readable?                  client readable?
+       accept new client              conn_read + conn_serve
+              |                                 |
+              +------------- repeat ------------+
+```
+
+- Keep a dynamic `struct pollfd` array and a parallel `conn_t *` array.
+- Index 0 is the listener. Accepted client sockets must be nonblocking; use the given `set_nonblocking(fd)`.
+- On readable input, call `conn_read()` and then `conn_serve()` when bytes arrive.
+- Close and free on EOF, a hard error, or when `conn_serve()` requests closure.
+- When removing an array entry by swapping in the last entry, process that slot again.
 
 ```bash
 make test MODE=poll
 ```
 
-### Task 5: One thread, `epoll` — TODO 7, `srv_epoll.c` (15%)
+# Homework
 
-The same logic with `epoll_create1`, `epoll_ctl`, `epoll_wait`; store the `conn_t*` in `event.data.ptr`. Level-triggered is enough.
+## Task 5: `select()` — TODO 5 (7%)
+
+Implement the same readiness loop using `select()`. Unlike `poll`, the descriptor set is both input and output:
+
+```text
+ each iteration                              next iteration
+ +------------------+                      +------------------+
+ | FD_ZERO(&set)    |                      | rebuild from zero |
+ | FD_SET(listener) |     ready fds only   | FD_SET(listener)  |
+ | FD_SET(each fd)  |  +-----------------> | FD_SET(each fd)   |
+ | reset timeout    |  |                   | reset timeout     |
+ +--------+---------+  |                   +------------------+
+          |            |
+          v            |
+ select(maxfd+1, &set, ...) -- modifies set and may modify timeout
+          |
+          +--> FD_ISSET(listener)? accept
+          +--> FD_ISSET(client fd)? read/serve/close
+```
+
+- Keep `conn_t *clients[FD_SETSIZE]`, indexed by fd.
+- Rebuild the `fd_set` and timeout on every iteration because `select()` may modify them.
+- Refuse and close an accepted fd greater than or equal to `FD_SETSIZE`.
+- Close and free every remaining client during shutdown.
+
+```bash
+make test MODE=select
+```
+
+## Task 6: Process per connection — TODO 6 (6%)
+
+In `run_fork()`:
+
+- The child closes the listener, calls `serve_client(fd)`, and calls `_exit(0)`.
+- The parent closes its copy of the client fd immediately and continues accepting.
+- Do not write `SIGCHLD` code; automatic reaping is already given in `main.c`.
+
+`O_CREAT | O_EXCL` makes the first submission win across processes as well as threads, so no shared-memory mutex is needed.
+
+```bash
+make test MODE=fork
+```
+
+## Task 7: Linux `epoll` — TODO 7 (10%)
+
+Implement the readiness loop with `epoll_create1`, `epoll_ctl`, and `epoll_wait`:
+
+- Register the listener and nonblocking client sockets.
+- Store each `conn_t *` in `event.data.ptr`; use `NULL` to identify the listener.
+- Level-triggered `EPOLLIN` is sufficient; edge-triggered mode is not required.
+- Keep a registry of open connections so you can clean them all up on shutdown.
+- Free each connection exactly once. Closing its fd removes it from the epoll set.
 
 ```bash
 make test MODE=epoll
 ```
 
-## Part B — Homework, due next lab (15%)
+## How the models differ
 
-- **TODO 8** `srv_fork.c`: process per connection. The child closes the listener; the parent closes the client fd; no zombies (`SIGCHLD`).
-- **TODO 9** `srv_select.c`: one thread, `select()`. Rebuild the `fd_set` every iteration. A client with `fd >= FD_SETSIZE` must be refused, **not** crash the server.
-- **`NOTES.md`** (half a page): the timing table below (use `make test-all`, and a run with `sh tools/run_students.sh 800 PORT` against `poll` and `epoll`; raise `ulimit -n`) and short answers to:
-  1. In Task 2, how long did 20 students take against the iterative server, and why? Which model was fastest later, and why does the grading delay matter?
-  2. Why does this lab need no mutex? Why does `fork` still reject duplicate submissions without shared memory?
-  3. `select` vs `poll` vs `epoll`: what is rebuilt or scanned on every call, and what is the fd limit?
-  4. If one request takes 50 ms (`EXAM_GRADE_DELAY_MS=50`), what happens to the *other* students in the thread server? In the epoll server?
-  5. Where in your code does a partial `recv` or `send` matter?
+| Model | Who waits for a client? | What happens on each iteration? | Main limit in this lab |
+|---|---|---|---|
+| Iterative | The single server thread | Finish one client before the next `accept()` | One quiet client stalls everyone |
+| Thread | One thread per connection | Each thread can block independently | One thread and stack per client |
+| Fork | One process per connection | Each child serves one client | Process creation and memory cost |
+| `select` | One event-loop thread | Rebuild fd sets and inspect fds up to `FD_SETSIZE` | `FD_SETSIZE`, repeated set construction |
+| `poll` | One event-loop thread | Kernel and user code process the poll array | Array work grows with connection count |
+| `epoll` | One event-loop thread | Registrations persist; wait returns ready events | More setup and Linux-specific API |
 
-| model | students | seconds |
-|---|---:|---:|
-| iterative | 20 | |
-| thread | 300 | |
-| fork | 300 | |
-| select | 300 | |
-| poll | 300 | |
-| epoll | 300 | |
+**Readiness is not parallel grading.** `select`, `poll`, and `epoll` only tell you that a socket operation can make progress. `exam_handle_line()` still runs synchronously, and `send_all()` may wait for a slow reader. A 50 ms grading delay therefore stalls the whole event-loop server, while a thread/fork worker stalls only its own connection. Fully nonblocking output and worker offload are optional extensions, not requirements.
 
-### Bonus (optional)
+## Short notes and full check (5%)
 
-- A thread **pool** instead of thread-per-connection.
-- `epoll` edge-triggered (`EPOLLET`): you must read until `EAGAIN`.
-- An output buffer with `EPOLLOUT`, so a slow reader cannot stall the loop.
-- Hand slow grading work of an event-loop server to a worker thread.
-- A student that is clever: parse the questions and answer the arithmetic ones correctly.
+Run:
 
-## What the tests check
+```bash
+make test-all
+```
 
-`make test MODE=<model>` starts the server and runs `tools/check_server.py`: wrong/missing login, bad formats, duplicate submit (also from a new connection), requests glued together in one `send`, a request sent one byte at a time, a 3000-byte line, clients that vanish in the middle of a request, and **one idle client with half a request that must not block the others** (the iterative server is exempt). Then it starts 300 copies of **your** `bin/student` at once (20 for the iterative server) and finally compares the server's open fds before and after and looks for zombie children.
+In a short `NOTES.md`, include the iterative 20-student timing and answer:
 
-## Common mistakes
+1. Why does an idle client block the iterative server but not the other models?
+2. What is private to each thread/fork worker, and what is shared read-only?
+3. Why do duplicate submissions fail without a mutex or shared memory?
+4. Why must `select()` rebuild its fd set? What does `poll()` still scan?
+5. Why can slow grading stall an `epoll` event loop despite nonblocking sockets?
+6. Where did your code handle a partial `recv()` or `send()`?
 
-- Assuming one `recv` is one request, or one reply (in the student too!).
-- Passing `&client_fd` to a thread, or reusing one `conn_t` for several clients.
-- Forgetting to close the client fd in the parent after `fork`, or on any error path.
-- Not rebuilding the `fd_set` for `select` (the call modifies it).
-- Removing an entry from the `pollfd` array while iterating without re-checking the swapped-in entry.
-- Freeing a `conn_t` twice, or using it after `close`.
-- Blocking in the event loop (a slow handler stalls every client).
-- Writing without `MSG_NOSIGNAL` (or ignoring `SIGPIPE`) and dying when a peer disappears.
+No large load report is required. An optional 800-client run against `poll` or `epoll` is useful only if you want to explore fd limits (`ulimit -n`).
 
-## Submission
+## Submission and assessment
 
-Submit `common/linebuf.c`, `exam-server/conn.c`, `exam-server/srv_*.c`, `student/student.c` and `NOTES.md`. Do not submit `bin/`, `data/` or `results/`.
+Submit `protocol/linebuf.c`, `student/student.c`, `exam-server/servers.c`, and `NOTES.md`. Do not submit `bin/`, `data/`, or `results/`.
 
 | Component | Weight |
 |---|---:|
-| Task 1: framing, `conn_serve`, iterative server, student client | 35% |
-| Task 2: many students against the iterative server (observation in NOTES) | 5% |
+| Reliable sending, iterative connection, and student client | 37% |
+| Iterative observation | 5% |
 | Thread server | 15% |
 | `poll` server | 15% |
-| `epoll` server | 15% |
-| Homework: `fork`, `select`, `NOTES.md` | 15% |
+| `select` server | 7% |
+| Fork server | 6% |
+| `epoll` server | 10% |
+| Short notes | 5% |
+| **Total** | **100%** |
 
-You may use AI tools for explanation and debugging under the course policy. You must be able to explain every line you submit: each `connect`, `accept`, `recv`, `send` and `close`, and why the server cannot block or leak.
+## Common mistakes
+
+- Assuming one `recv()` equals one request or one reply.
+- Forgetting requests left in the line buffer after processing the first line.
+- Passing `&client_fd` from the accept loop to a new thread.
+- Closing the client in a fork child but not in the parent.
+- Forgetting to make event-loop client sockets nonblocking.
+- Removing a `poll` entry without rechecking the entry swapped into its slot.
+- Using a client fd greater than or equal to `FD_SETSIZE` with `FD_SET`.
+- Treating `epoll` as a worker pool: the handler still runs on the event-loop thread.
+- Using `atoi()` or an unchecked `snprintf()` length in new protocol code.
+- Modifying the given signal infrastructure instead of using `g_stop` and the supplied helpers.
+
+You may use AI tools for explanation and debugging under the course policy. You must be able to explain every line you submit, especially `connect`, `accept`, `recv`, `send`, `fork`, `close`, and every readiness-loop iteration.

@@ -1,8 +1,5 @@
 #!/bin/sh
-# usage: sh tools/run_students.sh N [PORT] [THINK_MS] [FIRST_INDEX]
-# Starts N student programs (bin/student) AT THE SAME TIME against the exam server
-# on 127.0.0.1:PORT, waits for all of them, and prints how many succeeded and how
-# long it took. Student i uses id 1001+i and its pin from data/students.csv.
+# GIVEN: start N student clients at the same time and report success/time.
 N=${1:?usage: run_students.sh N [PORT] [THINK_MS] [FIRST_INDEX]}
 PORT=${2:-5200}
 THINK=${3:-100}
@@ -20,11 +17,13 @@ while [ "$i" -lt $((FIRST + N)) ]; do
 done
 wait
 END=$(date +%s.%N)
-OK=$(ls "$OUT"/*.ok 2>/dev/null | wc -l)
-SECS=$(awk -v a=$START -v b=$END 'BEGIN{printf "%.2f", b-a}')
+OK=$(find "$OUT" -name '*.ok' | wc -l)
+SECS=$(awk -v a="$START" -v b="$END" 'BEGIN{printf "%.2f", b-a}')
 echo "students: $OK/$N ok in ${SECS}s"
 if [ "$OK" -ne "$N" ]; then
-    for f in $(ls "$OUT"/*.err | head -3); do [ -s "$f" ] && echo "  e.g. $(basename $f .err): $(head -1 $f)"; done
+    find "$OUT" -name '*.err' | head -3 | while read -r f; do
+        [ -s "$f" ] && echo "  e.g. $(basename "$f" .err): $(head -1 "$f")"
+    done
 fi
 [ -n "${SHOW:-}" ] && cat "$OUT"/*.out | tail -n 5
 rm -rf "$OUT"
